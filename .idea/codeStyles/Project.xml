@@ -1,0 +1,18 @@
+<component name="ProjectCodeStyleConfiguration">
+  <code_scheme name="Project" version="173">
+    <RsCodeStyleSettings>
+      <option name="ALIGN_RET_TYPE" value="false" />
+      <option name="ALIGN_WHERE_CLAUSE" value="true" />
+      <option name="ALIGN_TYPE_PARAMS" value="true" />
+      <option name="SPACE_AROUND_ASSOC_TYPE_BINDING" value="true" />
+    </RsCodeStyleSettings>
+    <codeStyleSettings language="Rust">
+      <option name="RIGHT_MARGIN" value="200" />
+      <option name="ALIGN_MULTILINE_PARAMETERS" value="false" />
+      <indentOptions>
+        <option name="CONTINUATION_INDENT_SIZE" value="8" />
+        <option name="USE_TAB_CHARACTER" value="true" />
+      </indentOptions>
+    </codeStyleSettings>
+  </code_scheme>
+</component>

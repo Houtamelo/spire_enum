@@ -1,0 +1,65 @@
+procedural_enum! {
+    #[variant_types(
+        each_attributes = [
+            derive(Debug, Clone, Copy),
+            strum::VariantNames,
+        ],
+
+        each_derives(Debug, Clone, Copy),
+        
+        conversions(var_from_enum, enum_from_var),
+        or
+        conversions(all),  
+    )]
+    pub enum Entity {
+        #[dont_generate_conversions]
+        #[dont_generate_type]
+        #[dont_generate] // implies both above
+        SpireWindowMode(SpireWindowMode),
+        
+        #[methods_via_deref]
+        #[methods_via_field(field_name)]
+        #[methods_via(|x| &*x)]
+        #[statics_via_type(Vector2)]
+        WindowSize(Vector2i),
+        MaxFps(i32),
+        DialogueTextSpeed(i32),
+        Vsync(bool),
+        MainVolume(i32),
+        MusicVolume(i32),
+        SfxVolume(i32),
+        VoiceVolume(i32),
+    }
+
+}
+
+extract_variants_into_enum! {
+	ENUM_OUT: {
+		#[vars(derive(Debug, Clone, Copy))]
+		#[derive(Clone, Copy)]
+		pub enum SettingsEnum {
+			[@ SKIP] SpireWindowMode(SpireWindowMode),
+			WindowSize(Vector2i),
+			[@ SKIP] SkillOverlayMode(SkillOverlayMode),
+			[@ SKIP] Language(Language),
+			MaxFps(i32),
+			DialogueTextSpeed(i32),
+			Vsync(bool),
+			MainVolume(i32),
+			MusicVolume(i32),
+			SfxVolume(i32),
+			VoiceVolume(i32),
+		}
+	}
+
+	DELEGATES: {
+		impl trait Setting {
+			[fn key(&self) -> &'static str]
+			[fn apply(&self)]
+		}
+
+		impl {
+			[pub fn to_variant(&self) -> Variant]
+		}
+	}
+}

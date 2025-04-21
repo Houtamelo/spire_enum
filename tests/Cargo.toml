@@ -1,0 +1,7 @@
+[package]
+name = "tests"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+spire_enum_macros = { path = "./../proc_macro" }
