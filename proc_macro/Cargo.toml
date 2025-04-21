@@ -10,7 +10,7 @@ repository = "https://github.com/Houtamelo/spire_enum"
 license = "MIT"
 keywords = ["macro", "enum", "traits", "delegate", "variants"]
 categories = ["rust-patterns"]
-include = ["../LICENSE", "../README.md"]
+include = ["../LICENSE", "../README.md", "/src"]
 
 [lib]
 proc-macro = true
