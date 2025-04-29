@@ -3,7 +3,7 @@ use std::fmt::{self, Debug, Display};
 use super::*;
 
 // Test with custom settings
-#[delegated_enum(generate_variants, impl_conversions)]
+#[delegated_enum(extract_variants, impl_conversions)]
 pub enum Option<T> {
 	Some(T),
 	None,
@@ -51,7 +51,7 @@ pub enum Reference<'a, T> {
 }
 
 // Test with valid supported settings
-#[delegated_enum(generate_variants, impl_conversions)]
+#[delegated_enum(extract_variants, impl_conversions)]
 pub enum SupportedSettings {
 	First(String),
 	Second(i32),

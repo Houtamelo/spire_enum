@@ -1,56 +1,56 @@
 use super::*;
 
 impl CollectIdents for Path {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			leading_colon: _,
 			segments,
 		} = self;
-		collect!(segments);
+		collect!(map, segments);
 
 		if let Some(seg) = segments.last() {
-			cache_ambiguous(&seg.ident);
+			map.insert_ambiguous(&seg.ident);
 		}
 	}
 }
 
 impl CollectIdents for PathSegment {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			ident: _,
 			arguments,
 		} = self;
-		collect!(arguments);
+		collect!(map, arguments);
 	}
 }
 
 impl CollectIdents for PathArguments {
-	fn collect_idents(&self) {
-		match_collect!(self => PathArguments { AngleBracketed, Parenthesized, .. });
+	fn collect_idents(&self, map: &mut IdentMap) {
+		match_collect!(map, self => PathArguments { AngleBracketed, Parenthesized, .. });
 	}
 }
 
 impl CollectIdents for AssocConst {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			ident,
 			generics,
 			eq_token: _,
 			value,
 		} = self;
-		cache_constant(ident);
-		collect!(generics, value);
+		map.insert_constant(ident);
+		collect!(map, generics, value);
 	}
 }
 
 impl CollectIdents for AssocType {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			ident: _,
 			generics,
 			eq_token: _,
 			ty,
 		} = self;
-		collect!(generics, ty);
+		collect!(map, generics, ty);
 	}
 }

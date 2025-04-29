@@ -10,7 +10,7 @@ pub enum InputImplItem {
 
 #[derive(Parse, ToTokens)]
 pub struct InputImplItemFn {
-	pub attrs: Any<InputAttribute>,
+	pub attrs: Any<Attribute<SynMeta>>,
 	pub vis:   Visibility,
 	pub sig:   InputFnSignature,
 	pub body:  InputImplItemFnBody,
@@ -24,7 +24,7 @@ pub enum InputImplItemFnBody {
 
 #[derive(Parse, ToTokens)]
 pub struct InputImplItemConst {
-	pub attrs: Any<InputAttribute>,
+	pub attrs: Any<Attribute<SynMeta>>,
 	pub vis: Visibility,
 	pub const_token: Token![const],
 	pub ident: Ident,
@@ -43,7 +43,7 @@ pub enum InputImplItemConstBody {
 
 #[derive(Parse, ToTokens)]
 pub struct InputImplItemAssocType {
-	pub attrs: Any<InputAttribute>,
+	pub attrs: Any<Attribute<SynMeta>>,
 	pub type_token: Token![type],
 	pub ident: Ident,
 	pub generics: Optional<InputGenerics>,

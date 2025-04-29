@@ -23,10 +23,10 @@ macro_rules! err_expected_only_one {
 
 macro_rules! assign_unique_or_panic {
 	($maybe_first:expr, $second:expr) => {
-		if let Some(first) = $maybe_first {
+		if let _Some(first) = $maybe_first {
 			err_expected_only_one!(first, $second);
 		} else {
-			$maybe_first = Some($second);
+			$maybe_first = _Some($second);
 		}
 	};
 }

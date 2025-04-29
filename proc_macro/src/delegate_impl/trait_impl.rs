@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Parse, ToTokens)]
 pub struct InputImplTrait {
-	attrs: Any<InputAttribute>,
+	attrs: Any<Attribute<SynMeta>>,
 	defaultness: Optional<Token![default]>,
 	unsafety: Optional<Token![unsafe]>,
 	impl_token: Token![impl],
@@ -21,7 +21,7 @@ pub fn run(input: InputImplTrait) -> Result<TokenStream> {
 }
 
 struct SaneImplTrait {
-	attrs: Any<InputAttribute>,
+	attrs: Any<Attribute<SynMeta>>,
 	defaultness: Optional<Token![default]>,
 	unsafety: Optional<Token![unsafe]>,
 	impl_token: Token![impl],
@@ -91,7 +91,7 @@ fn sanitize_item(item: InputImplItem) -> Result<SaneItem> {
 
 #[derive(ToTokens)]
 struct SaneAssocConst {
-	attrs: Any<InputAttribute>,
+	attrs: Any<Attribute<SynMeta>>,
 	vis: Visibility,
 	const_token: Token![const],
 	ident: Ident,
@@ -140,7 +140,7 @@ fn sanitize_assoc_const(input: InputImplItemConst) -> Result<SaneAssocConst> {
 
 #[derive(ToTokens)]
 struct SaneAssocType {
-	attrs: Any<InputAttribute>,
+	attrs: Any<Attribute<SynMeta>>,
 	type_token: Token![type],
 	ident: Ident,
 	generics: Optional<InputGenerics>,
@@ -179,7 +179,7 @@ fn sanitize_assoc_type(input: InputImplItemAssocType) -> Result<SaneAssocType> {
 }
 
 struct SaneMethod {
-	attrs: Any<InputAttribute>,
+	attrs: Any<Attribute<SynMeta>>,
 	vis: Visibility,
 	sig: SaneMethodSignature,
 	_semi_token: Token![;],
@@ -266,7 +266,7 @@ fn sanitize_method_signature(input: InputFnSignature) -> Result<SaneMethodSignat
 }
 
 struct SaneNonReceiverFnArg {
-	attrs: Vec<Attribute>,
+	attrs: Vec<SynAttribute>,
 	pat_ident: PatIdent,
 	colon_token: Token![:],
 	ty: Box<Type>,

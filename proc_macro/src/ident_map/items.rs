@@ -1,15 +1,8 @@
 use super::*;
-use crate::delegated_enum::{
-	SaneVariantFields,
-	SaneVariantFieldsNamed,
-	SaneVariantFieldsUnnamed,
-	VariantFieldNamed,
-	VariantFieldUnnamed,
-};
 
 impl CollectIdents for Item {
-	fn collect_idents(&self) {
-		match_collect!(self => Item {
+	fn collect_idents(&self, map: &mut IdentMap) {
+		match_collect!(map, self => Item {
 			Const,
 			Enum,
 			ExternCrate,
@@ -31,7 +24,7 @@ impl CollectIdents for Item {
 }
 
 impl CollectIdents for ItemConst {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			vis: _,
@@ -44,13 +37,13 @@ impl CollectIdents for ItemConst {
 			expr,
 			semi_token: _,
 		} = self;
-		cache_constant(ident);
-		collect!(generics, ty, expr);
+		map.insert_constant(ident);
+		collect!(map, generics, ty, expr);
 	}
 }
 
 impl CollectIdents for ItemEnum {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			vis: _,
@@ -60,29 +53,29 @@ impl CollectIdents for ItemEnum {
 			brace_token: _,
 			variants,
 		} = self;
-		cache_ty(ident);
-		collect!(generics, variants);
+		map.insert_ty(ident);
+		collect!(map, generics, variants);
 	}
 }
 
 impl CollectIdents for Variant {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			ident: _,
 			fields,
 			discriminant,
 		} = self;
-		collect!(fields);
+		collect!(map, fields);
 
 		if let Some((_, expr)) = discriminant {
-			collect!(expr);
+			collect!(map, expr);
 		}
 	}
 }
 
 impl CollectIdents for ItemForeignMod {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, _map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			unsafety: _,
@@ -94,7 +87,7 @@ impl CollectIdents for ItemForeignMod {
 }
 
 impl CollectIdents for ItemImpl {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			defaultness: _,
@@ -106,26 +99,26 @@ impl CollectIdents for ItemImpl {
 			brace_token: _,
 			items,
 		} = self;
-		collect!(generics, self_ty, items);
+		collect!(map, generics, self_ty, items);
 
 		if let Some((_, trait_path, _)) = trait_ {
-			collect!(trait_path);
+			collect!(map, trait_path);
 
 			if let Some(seg) = trait_path.segments.last() {
-				cache_trait(&seg.ident);
+				map.insert_trait(&seg.ident);
 			}
 		}
 	}
 }
 
 impl CollectIdents for ImplItem {
-	fn collect_idents(&self) {
-		match_collect!(self => ImplItem { Const, Fn, Type, Macro, ..panic });
+	fn collect_idents(&self, map: &mut IdentMap) {
+		match_collect!(map, self => ImplItem { Const, Fn, Type, Macro, ..panic });
 	}
 }
 
 impl CollectIdents for ImplItemConst {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			vis: _,
@@ -139,13 +132,13 @@ impl CollectIdents for ImplItemConst {
 			expr,
 			semi_token: _,
 		} = self;
-		cache_constant(ident);
-		collect!(generics, ty, expr);
+		map.insert_constant(ident);
+		collect!(map, generics, ty, expr);
 	}
 }
 
 impl CollectIdents for ImplItemFn {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			vis: _,
@@ -153,12 +146,12 @@ impl CollectIdents for ImplItemFn {
 			sig,
 			block,
 		} = self;
-		collect!(sig, block);
+		collect!(map, sig, block);
 	}
 }
 
 impl CollectIdents for Signature {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			constness: _,
 			asyncness: _,
@@ -172,18 +165,18 @@ impl CollectIdents for Signature {
 			variadic: _,
 			output,
 		} = self;
-		collect!(generics, inputs, output);
+		collect!(map, generics, inputs, output);
 	}
 }
 
 impl CollectIdents for FnArg {
-	fn collect_idents(&self) {
-		match_collect!(self => FnArg { Receiver, Typed });
+	fn collect_idents(&self, map: &mut IdentMap) {
+		match_collect!(map, self => FnArg { Receiver, Typed });
 	}
 }
 
 impl CollectIdents for Receiver {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			reference,
@@ -192,16 +185,16 @@ impl CollectIdents for Receiver {
 			colon_token: _,
 			ty,
 		} = self;
-		collect!(ty);
+		collect!(map, ty);
 
 		if let Some((_, lifetime)) = reference {
-			collect!(lifetime);
+			collect!(map, lifetime);
 		}
 	}
 }
 
 impl CollectIdents for ImplItemType {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			vis: _,
@@ -213,13 +206,13 @@ impl CollectIdents for ImplItemType {
 			ty,
 			semi_token: _,
 		} = self;
-		cache_ty(ident);
-		collect!(generics, ty);
+		map.insert_ty(ident);
+		collect!(map, generics, ty);
 	}
 }
 
 impl CollectIdents for ImplItemMacro {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, _map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			mac: _,
@@ -229,7 +222,7 @@ impl CollectIdents for ImplItemMacro {
 }
 
 impl CollectIdents for ItemMacro {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, _map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			ident: _,
@@ -240,7 +233,7 @@ impl CollectIdents for ItemMacro {
 }
 
 impl CollectIdents for ItemMod {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			vis: _,
@@ -252,13 +245,13 @@ impl CollectIdents for ItemMod {
 		} = self;
 
 		if let Some((_, items)) = content {
-			collect!(items);
+			collect!(map, items);
 		}
 	}
 }
 
 impl CollectIdents for ItemStatic {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			vis: _,
@@ -271,12 +264,12 @@ impl CollectIdents for ItemStatic {
 			expr,
 			semi_token: _,
 		} = self;
-		collect!(ty, expr);
+		collect!(map, ty, expr);
 	}
 }
 
 impl CollectIdents for ItemStruct {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			vis: _,
@@ -286,13 +279,13 @@ impl CollectIdents for ItemStruct {
 			fields,
 			semi_token: _,
 		} = self;
-		cache_ty(ident);
-		collect!(generics, fields);
+		map.insert_ty(ident);
+		collect!(map, generics, fields);
 	}
 }
 
 impl CollectIdents for ItemTrait {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			vis: _,
@@ -307,19 +300,19 @@ impl CollectIdents for ItemTrait {
 			brace_token: _,
 			items,
 		} = self;
-		cache_trait(ident);
-		collect!(generics, supertraits, items);
+		map.insert_trait(ident);
+		collect!(map, generics, supertraits, items);
 	}
 }
 
 impl CollectIdents for TraitItem {
-	fn collect_idents(&self) {
-		match_collect!(self => TraitItem { Const, Fn, Type, Macro, ..panic });
+	fn collect_idents(&self, map: &mut IdentMap) {
+		match_collect!(map, self => TraitItem { Const, Fn, Type, Macro, ..panic });
 	}
 }
 
 impl CollectIdents for TraitItemConst {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			const_token: _,
@@ -330,29 +323,29 @@ impl CollectIdents for TraitItemConst {
 			default,
 			semi_token: _,
 		} = self;
-		cache_constant(ident);
-		collect!(generics, ty);
+		map.insert_constant(ident);
+		collect!(map, generics, ty);
 
 		if let Some((_, expr)) = default {
-			collect!(expr);
+			collect!(map, expr);
 		}
 	}
 }
 
 impl CollectIdents for TraitItemFn {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			sig,
 			default,
 			semi_token: _,
 		} = self;
-		collect!(sig, default);
+		collect!(map, sig, default);
 	}
 }
 
 impl CollectIdents for TraitItemType {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			type_token: _,
@@ -363,17 +356,17 @@ impl CollectIdents for TraitItemType {
 			default,
 			semi_token: _,
 		} = self;
-		cache_ty(ident);
-		collect!(generics, bounds);
+		map.insert_ty(ident);
+		collect!(map, generics, bounds);
 
 		if let Some((_, expr)) = default {
-			collect!(expr);
+			collect!(map, expr);
 		}
 	}
 }
 
 impl CollectIdents for TraitItemMacro {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, _map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			mac: _,
@@ -383,7 +376,7 @@ impl CollectIdents for TraitItemMacro {
 }
 
 impl CollectIdents for ItemTraitAlias {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			vis: _,
@@ -394,13 +387,13 @@ impl CollectIdents for ItemTraitAlias {
 			bounds,
 			semi_token: _,
 		} = self;
-		cache_trait(ident);
-		collect!(generics, bounds);
+		map.insert_trait(ident);
+		collect!(map, generics, bounds);
 	}
 }
 
 impl CollectIdents for ItemType {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			vis: _,
@@ -411,13 +404,13 @@ impl CollectIdents for ItemType {
 			ty,
 			semi_token: _,
 		} = self;
-		cache_ty(ident);
-		collect!(generics, ty);
+		map.insert_ty(ident);
+		collect!(map, generics, ty);
 	}
 }
 
 impl CollectIdents for ItemUnion {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			vis: _,
@@ -426,13 +419,13 @@ impl CollectIdents for ItemUnion {
 			generics,
 			fields,
 		} = self;
-		cache_ty(ident);
-		collect!(generics, fields);
+		map.insert_ty(ident);
+		collect!(map, generics, fields);
 	}
 }
 
 impl CollectIdents for ItemUse {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, _map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			vis: _,
@@ -445,7 +438,7 @@ impl CollectIdents for ItemUse {
 }
 
 impl CollectIdents for ItemExternCrate {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, _map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			vis: _,
@@ -459,45 +452,45 @@ impl CollectIdents for ItemExternCrate {
 }
 
 impl CollectIdents for ItemFn {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			vis: _,
 			sig,
 			block,
 		} = self;
-		collect!(sig, block);
+		collect!(map, sig, block);
 	}
 }
 
 impl CollectIdents for Fields {
-	fn collect_idents(&self) {
-		match_collect!(self => Fields { Named, Unnamed, .. });
+	fn collect_idents(&self, map: &mut IdentMap) {
+		match_collect!(map, self => Fields { Named, Unnamed, .. });
 	}
 }
 
 impl CollectIdents for FieldsNamed {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			brace_token: _,
 			named,
 		} = self;
-		collect!(named);
+		collect!(map, named);
 	}
 }
 
 impl CollectIdents for FieldsUnnamed {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			paren_token: _,
 			unnamed,
 		} = self;
-		collect!(unnamed);
+		collect!(map, unnamed);
 	}
 }
 
 impl CollectIdents for Field {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			vis: _,
@@ -506,39 +499,6 @@ impl CollectIdents for Field {
 			colon_token: _,
 			ty,
 		} = self;
-		collect!(ty);
-	}
-}
-
-impl CollectIdents for SaneVariantFields {
-	fn collect_idents(&self) {
-		match_collect!(self => SaneVariantFields { Named, Unnamed, .. });
-	}
-}
-
-impl CollectIdents for SaneVariantFieldsNamed {
-	fn collect_idents(&self) { iter_collect!(self.fields.iter()) }
-}
-
-impl CollectIdents for SaneVariantFieldsUnnamed {
-	fn collect_idents(&self) { iter_collect!(self.fields.iter()) }
-}
-
-impl<T> CollectIdents for VariantFieldNamed<T> {
-	fn collect_idents(&self) {
-		let Self {
-			attrs: _,
-			ident: _,
-			colon_token: _,
-			ty,
-		} = self;
-		collect!(ty);
-	}
-}
-
-impl<T> CollectIdents for VariantFieldUnnamed<T> {
-	fn collect_idents(&self) {
-		let Self { attrs: _, ty } = self;
-		collect!(ty);
+		collect!(map, ty);
 	}
 }

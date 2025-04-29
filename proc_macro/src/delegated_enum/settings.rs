@@ -2,19 +2,18 @@ use super::*;
 
 mod kw {
 	use super::*;
-	custom_keyword!(derive);
-	custom_keyword!(attrs);
-	custom_keyword!(generate_variants);
+	custom_keyword!(extract_variants);
 	custom_keyword!(impl_enum_try_into_variants);
 	custom_keyword!(impl_variants_into_enum);
 	custom_keyword!(impl_conversions);
 }
 
+#[derive(Default)]
 pub struct Settings {
-	pub generate_variants: Option<SaneGenerateVariants>,
-	enum_try_into_variants: Option<kw::impl_enum_try_into_variants>,
-	variants_into_enum: Option<kw::impl_variants_into_enum>,
-	conversions: Option<kw::impl_conversions>,
+	pub extract_variants: Optional<SaneSettingExtractVariants>,
+	enum_try_into_variants: Optional<kw::impl_enum_try_into_variants>,
+	variants_into_enum: Optional<kw::impl_variants_into_enum>,
+	conversions: Optional<kw::impl_conversions>,
 }
 
 impl Settings {
@@ -29,99 +28,82 @@ impl Settings {
 
 pub fn parse_settings(input_stream: TokenStream1) -> Result<Settings> {
 	let setting_list = syn::parse::<Punctuated<Setting, Token![,]>>(input_stream)?;
-
-	let mut generate_variants: Option<SaneGenerateVariants> = None;
-	let mut enum_try_into_variants: Option<kw::impl_enum_try_into_variants> = None;
-	let mut variants_into_enum: Option<kw::impl_variants_into_enum> = None;
-	let mut conversions: Option<kw::impl_conversions> = None;
+	let mut sane_settings = Settings::default();
 
 	for setting in setting_list {
 		match setting {
-			Setting::GenerateVariants(kw, paren_option) => {
-				if let Some(first_gen_vars) = generate_variants {
-					err_expected_only_one!(first_gen_vars.kw, kw);
-				} else {
-					generate_variants = Some(sanitize_generate_variant_types(kw, paren_option)?);
-				}
+			Setting::ExtractVariants(extract_variants) => {
+				let sane_extract_variants = sanitize_extract_variants(extract_variants)?;
+				assign_unique_or_panic!(sane_settings.extract_variants, sane_extract_variants);
 			}
 			Setting::ImplVariantsTryFromEnum(kw) => {
-				assign_unique_or_panic!(enum_try_into_variants, kw)
+				assign_unique_or_panic!(sane_settings.enum_try_into_variants, kw)
 			}
 			Setting::ImplEnumFromVars(kw) => {
-				assign_unique_or_panic!(variants_into_enum, kw)
+				assign_unique_or_panic!(sane_settings.variants_into_enum, kw)
 			}
 			Setting::ImplConversions(kw) => {
-				assign_unique_or_panic!(conversions, kw)
+				assign_unique_or_panic!(sane_settings.conversions, kw)
 			}
 		}
 	}
 
-	match (enum_try_into_variants, variants_into_enum, conversions) {
-		| (_, Some(..), Some(..)) | (Some(..), _, Some(..)) => {
-			bail!(conversions => "Setting `conversions` already implies `enum_try_into_variants` and `variants_into_enum`")
+	match (
+		&sane_settings.enum_try_into_variants,
+		&sane_settings.variants_into_enum,
+		&sane_settings.conversions,
+	) {
+		| (_, _Some(..), _Some(..)) | (_Some(..), _, _Some(..)) => {
+			bail!(sane_settings.conversions => "Setting `conversions` already implies `enum_try_into_variants` and `variants_into_enum`")
 		}
 		_ => {}
 	}
 
-	Ok(Settings {
-		generate_variants,
-		enum_try_into_variants,
-		variants_into_enum,
-		conversions,
-	})
+	Ok(sane_settings)
 }
 
 #[derive(Parse, ToTokens)]
 enum Setting {
-	GenerateVariants(
-		kw::generate_variants,
-		Optional<Paren<Punctuated<GenerateVariantTypesSetting, Token![,]>>>,
-	),
+	ExtractVariants(SettingExtractVariants),
 	ImplVariantsTryFromEnum(kw::impl_enum_try_into_variants),
 	ImplEnumFromVars(kw::impl_variants_into_enum),
 	ImplConversions(kw::impl_conversions),
 }
 
 #[derive(Parse, ToTokens)]
-enum GenerateVariantTypesSetting {
+struct SettingExtractVariants {
+	kw: kw::extract_variants,
+	attrs: Optional<Paren<Punctuated<ExtractVariantsAttrs, Token![,]>>>,
+}
+
+#[derive(Parse, ToTokens)]
+enum ExtractVariantsAttrs {
 	Attrs(SettingAttrs),
 	Derive(SettingDerive),
 }
 
-/// Shorthand for `each_attributes = [derive(...)]`
-#[derive(Parse, ToTokens)]
-struct SettingDerive {
-	pub kw: kw::derive,
-	pub paths: Paren<Punctuated<Path, Token![,]>>,
-}
-
-#[derive(Parse, ToTokens)]
-struct SettingAttrs {
-	pub kw: kw::attrs,
-	pub eq_token: Token![=],
-	pub attrs: Bracket<Punctuated<Meta, Token![,]>>,
-}
-
 #[derive(Default)]
-pub struct SaneGenerateVariants {
-	pub kw: kw::generate_variants,
-	pub attrs: Vec<Meta>,
+pub struct SaneSettingExtractVariants {
+	pub kw: kw::extract_variants,
+	pub attrs: Vec<SynMeta>,
 }
 
-fn sanitize_generate_variant_types(
-	kw: kw::generate_variants,
-	paren_option: Optional<Paren<Punctuated<GenerateVariantTypesSetting, Token![,]>>>,
-) -> Result<SaneGenerateVariants> {
+impl SaneSettingExtractVariants {
+	pub fn span(&self) -> Span { self.kw.span() }
+}
+
+fn sanitize_extract_variants(input: SettingExtractVariants) -> Result<SaneSettingExtractVariants> {
+	let SettingExtractVariants { kw, attrs } = input;
 	let mut each_attrs = Vec::new();
 
-	let _Some(paren) = paren_option else { return Ok(SaneGenerateVariants::default()) };
+	let _Some(paren) = attrs else { return Ok(SaneSettingExtractVariants::default()) };
 
 	for types_cfg in paren.into_parts().1 {
 		match types_cfg {
-			GenerateVariantTypesSetting::Attrs(SettingAttrs { attrs, .. }) => {
+			ExtractVariantsAttrs::Attrs(SettingAttrs { attrs, .. }) => {
 				each_attrs.extend(attrs.into_inner());
 			}
-			GenerateVariantTypesSetting::Derive(SettingDerive { kw: _kw, paths, .. }) => {
+			ExtractVariantsAttrs::Derive(SettingDerive { kw: _kw, paths, .. }) => {
 				let derive_ident = Ident::new("derive", _kw.span);
 				let meta_list = (|| Ok(try_parse_quote! { #derive_ident #paths }))().map_err(
 					|mut err: Error| {
@@ -137,12 +119,12 @@ fn sanitize_generate_variant_types(
 						err
 					},
 				)?;
-				each_attrs.push(Meta::List(meta_list));
+				each_attrs.push(SynMeta::List(meta_list));
 			}
 		}
 	}
 
-	Ok(SaneGenerateVariants {
+	Ok(SaneSettingExtractVariants {
 		kw,
 		attrs: each_attrs,
 	})

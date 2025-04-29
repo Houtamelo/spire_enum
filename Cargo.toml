@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "spire_enum",
     "proc_macro",
     "tests"
 ]

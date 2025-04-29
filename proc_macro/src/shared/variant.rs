@@ -1,101 +1,52 @@
 use super::*;
 
-pub struct SaneVariant {
-	pub attrs: SaneVariantAttributes,
+#[derive(Parse, ToTokens)]
+pub struct Var<Attr, FieldsAttr> {
+	pub attrs: Any<Attribute<Attr>>,
 	pub ident: Ident,
-	pub fields: SaneVariantFields,
-	pub discriminant: Optional<InputVariantDiscriminant>,
-	pub generics: Optional<SaneGenerics>,
-	pub explicit_delegator: Optional<ExplicitDelegator>,
+	pub fields: VarFields<FieldsAttr>,
+	pub discriminant: Optional<InputDiscriminant>,
 }
 
-impl SaneVariant {
-	pub fn allow_generate_type(&self) -> bool { self.attrs.no_var_type.is_none() }
-	pub fn allow_generate_conversions(&self) -> bool { self.attrs.no_convert.is_none() }
+#[derive(Parse, ToTokens)]
+pub enum VarFields<Attr> {
+	Named(Brace<Punctuated<VarFieldNamed<Attr>, Token![,]>>),
+	Unnamed(Paren<Punctuated<VarFieldUnnamed<Attr>, Token![,]>>),
+	Unit,
 }
 
-pub fn sanitize_variant(
-	variant: InputVariant,
-	settings: &Settings,
-	enum_generics: &Optional<SaneGenerics>,
-) -> Result<SaneVariant> {
-	let attrs = sanitize_attributes(variant.attrs)?;
-	let explicit_delegator = find_delegator(&attrs)?;
-
-	if let _Some(ExplicitDelegator::Expr(_, expr)) = &explicit_delegator {
-		if settings.generate_variants.is_some()
-			&& attrs.no_var_type.is_none()
-			&& expr.inputs.len() > 1
-		{
-			bail!(expr => "a type will be generated for this variant, the delegator closure should either \
-					take no parameters or take the variant's type as the single parameter");
-		}
-
-		if expr.inputs.len() > variant.fields.field_count() {
-			bail!(expr => "delegator closure should not take more parameters than variant's field count");
+impl<T> VarFields<T> {
+	pub fn len(&self) -> usize {
+		match self {
+			VarFields::Named(fields) => fields.len(),
+			VarFields::Unnamed(fields) => fields.len(),
+			VarFields::Unit => 0,
 		}
 	}
-
-	let fields = sanitize_variant_fields(variant.fields)?;
-	if let (_Some(a), Some(b)) = (&explicit_delegator, fields.delegator_field_kw()) {
-		err_expected_only_one!(a, b)
-	}
-
-	let generics = generics_needed_by_variant(&fields, enum_generics);
-
-	Ok(SaneVariant {
-		attrs,
-		ident: variant.ident,
-		fields,
-		discriminant: variant.discriminant,
-		generics,
-		explicit_delegator,
-	})
 }
 
-#[derive(Default)]
-pub struct SaneVariantAttributes {
-	pub syn_attrs: Vec<Meta>,
-	pub no_var_type: Option<var_kw::dont_generate_type>,
-	pub no_convert: Option<var_kw::dont_impl_conversions>,
-	pub delegate_via: Option<(var_kw::delegate_via, Paren<ExprClosure>)>,
+#[derive(Parse, ToTokens)]
+pub struct VarFieldNamed<Attr> {
+	pub attrs: Any<Attribute<Attr>>,
+	pub ident: Ident,
+	pub colon_token: Option<Token![:]>,
+	pub ty: Type,
 }
 
-fn sanitize_attributes(attrs: Any<InputAttribute<VariantMeta>>) -> Result<SaneVariantAttributes> {
-	let mut sane = SaneVariantAttributes::default();
-
-	for attr in attrs {
-		match attr.inner.into_inner() {
-			VariantMeta::NoVarType(kw) => assign_unique_or_panic!(sane.no_var_type, kw),
-			VariantMeta::NoConversions(kw) => assign_unique_or_panic!(sane.no_convert, kw),
-			VariantMeta::DelegateVia(kw, expr) => {
-				if let Some((first_kw, _)) = sane.delegate_via {
-					err_expected_only_one!(first_kw, kw);
-				} else {
-					sane.delegate_via = Some((kw, expr));
-				}
-			}
-			VariantMeta::Syn(syn_attr) => sane.syn_attrs.push(syn_attr),
-		}
-	}
-
-	Ok(sane)
+#[derive(Parse, ToTokens)]
+pub struct VarFieldUnnamed<Attr> {
+	pub attrs: Any<Attribute<Attr>>,
+	pub ty: Type,
 }
 
-#[derive(ToTokens)]
-pub enum ExplicitDelegator {
-	Expr(#[allow(unused)] var_kw::delegate_via, Box<Paren<ExprClosure>>),
+#[derive(Clone, Parse, ToTokens)]
+pub struct InputDiscriminant {
+	pub eq_token: Token![=],
+	pub expr: Expr,
 }
 
-fn find_delegator(attrs: &SaneVariantAttributes) -> Result<Optional<ExplicitDelegator>> {
-	match attrs.delegate_via.clone() {
-		Some((kw, expr)) => Ok(_Some(ExplicitDelegator::Expr(kw, expr.into()))),
-		None => Ok(_None),
-	}
-}
-
-fn generics_needed_by_variant(
-	fields: &SaneVariantFields,
+pub fn generics_needed_by_variant<T>(
+	fields: &VarFields<T>,
 	enum_generics: &Optional<SaneGenerics>,
 ) -> Optional<SaneGenerics> {
 	let _Some(enum_generics) = enum_generics.as_ref() else { return _None };
@@ -279,10 +230,35 @@ fn generics_needed_by_variant(
 
 	_Some(SaneGenerics {
 		input: InputGenerics {
-			_left_angle_bracket: enum_generics.input._left_angle_bracket,
-			params: params.into(),
-			_right_angle_bracket: enum_generics.input._right_angle_bracket,
+			lb_token: enum_generics.input.lb_token,
+			params:   params.into(),
+			rb_token: enum_generics.input.rb_token,
 		},
 		where_clause,
 	})
+}
+
+impl<T> CollectIdents for VarFields<T> {
+	fn collect_idents(&self, map: &mut IdentMap) {
+		match_collect!(map, self => VarFields { Named, Unnamed, .. });
+	}
+}
+
+impl<T> CollectIdents for VarFieldNamed<T> {
+	fn collect_idents(&self, map: &mut IdentMap) {
+		let Self {
+			attrs: _,
+			ident: _,
+			colon_token: _,
+			ty,
+		} = self;
+		collect!(map, ty);
+	}
+}
+
+impl<T> CollectIdents for VarFieldUnnamed<T> {
+	fn collect_idents(&self, map: &mut IdentMap) {
+		let Self { attrs: _, ty } = self;
+		collect!(map, ty);
+	}
 }

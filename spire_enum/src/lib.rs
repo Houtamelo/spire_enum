@@ -1,0 +1,9 @@
+pub mod prelude {
+	pub use spire_enum_macros::{
+		delegate_impl,
+		delegated_enum,
+		discriminant_generic_table,
+		variant_generic_table,
+		variant_type_table,
+	};
+}

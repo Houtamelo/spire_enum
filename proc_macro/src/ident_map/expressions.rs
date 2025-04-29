@@ -1,8 +1,8 @@
 use super::*;
 
 impl CollectIdents for Expr {
-	fn collect_idents(&self) {
-		match_collect!(self => Expr {
+	fn collect_idents(&self, map: &mut IdentMap) {
+		match_collect!(map, self => Expr {
 			Array,
 			Assign,
 			Async,
@@ -48,113 +48,113 @@ impl CollectIdents for Expr {
 }
 
 impl CollectIdents for ExprArray {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			bracket_token: _,
 			elems,
 		} = self;
-		collect!(elems);
+		collect!(map, elems);
 	}
 }
 
 impl CollectIdents for ExprAssign {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			left,
 			eq_token: _,
 			right,
 		} = self;
-		collect!(left, right);
+		collect!(map, left, right);
 	}
 }
 
 impl CollectIdents for ExprAsync {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			async_token: _,
 			capture: _,
 			block,
 		} = self;
-		collect!(block);
+		collect!(map, block);
 	}
 }
 
 impl CollectIdents for ExprAwait {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			base,
 			dot_token: _,
 			await_token: _,
 		} = self;
-		collect!(base);
+		collect!(map, base);
 	}
 }
 
 impl CollectIdents for ExprBinary {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			left,
 			op: _,
 			right,
 		} = self;
-		collect!(left, right);
+		collect!(map, left, right);
 	}
 }
 
 impl CollectIdents for ExprBlock {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			label: _,
 			block,
 		} = self;
-		collect!(block);
+		collect!(map, block);
 	}
 }
 
 impl CollectIdents for ExprBreak {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			break_token: _,
 			label: _,
 			expr,
 		} = self;
-		collect!(expr);
+		collect!(map, expr);
 	}
 }
 
 impl CollectIdents for ExprCall {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			func,
 			paren_token: _,
 			args,
 		} = self;
-		collect!(func, args);
+		collect!(map, func, args);
 	}
 }
 
 impl CollectIdents for ExprCast {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			expr,
 			as_token: _,
 			ty,
 		} = self;
-		collect!(expr, ty);
+		collect!(map, expr, ty);
 	}
 }
 
 impl CollectIdents for ExprClosure {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			lifetimes,
@@ -168,23 +168,23 @@ impl CollectIdents for ExprClosure {
 			output,
 			body,
 		} = self;
-		collect!(lifetimes, output, body, inputs);
+		collect!(map, lifetimes, output, body, inputs);
 	}
 }
 
 impl CollectIdents for ExprConst {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			const_token: _,
 			block,
 		} = self;
-		collect!(block);
+		collect!(map, block);
 	}
 }
 
 impl CollectIdents for ExprContinue {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, _map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			continue_token: _,
@@ -194,19 +194,19 @@ impl CollectIdents for ExprContinue {
 }
 
 impl CollectIdents for ExprField {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			base,
 			dot_token: _,
 			member,
 		} = self;
-		collect!(base, member);
+		collect!(map, base, member);
 	}
 }
 
 impl CollectIdents for ExprForLoop {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			label: _,
@@ -216,23 +216,23 @@ impl CollectIdents for ExprForLoop {
 			expr,
 			body,
 		} = self;
-		collect!(pat, expr, body);
+		collect!(map, pat, expr, body);
 	}
 }
 
 impl CollectIdents for ExprGroup {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			group_token: _,
 			expr,
 		} = self;
-		collect!(expr);
+		collect!(map, expr);
 	}
 }
 
 impl CollectIdents for ExprIf {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			if_token: _,
@@ -240,28 +240,28 @@ impl CollectIdents for ExprIf {
 			then_branch,
 			else_branch,
 		} = self;
-		collect!(cond, then_branch);
+		collect!(map, cond, then_branch);
 
 		if let Some((_, block)) = else_branch {
-			collect!(block);
+			collect!(map, block);
 		}
 	}
 }
 
 impl CollectIdents for ExprIndex {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			expr,
 			bracket_token: _,
 			index,
 		} = self;
-		collect!(expr, index);
+		collect!(map, expr, index);
 	}
 }
 
 impl CollectIdents for ExprInfer {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, _map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			underscore_token: _,
@@ -270,7 +270,7 @@ impl CollectIdents for ExprInfer {
 }
 
 impl CollectIdents for ExprLet {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			let_token: _,
@@ -278,32 +278,32 @@ impl CollectIdents for ExprLet {
 			eq_token: _,
 			expr,
 		} = self;
-		collect!(pat, expr);
+		collect!(map, pat, expr);
 	}
 }
 
 impl CollectIdents for ExprLit {
-	fn collect_idents(&self) { let Self { attrs: _, lit: _ } = self; }
+	fn collect_idents(&self, _map: &mut IdentMap) { let Self { attrs: _, lit: _ } = self; }
 }
 
 impl CollectIdents for ExprLoop {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			label: _,
 			loop_token: _,
 			body,
 		} = self;
-		collect!(body);
+		collect!(map, body);
 	}
 }
 
 impl CollectIdents for ExprMacro {
-	fn collect_idents(&self) { let Self { attrs: _, mac: _ } = self; }
+	fn collect_idents(&self, _map: &mut IdentMap) { let Self { attrs: _, mac: _ } = self; }
 }
 
 impl CollectIdents for ExprMatch {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			match_token: _,
@@ -311,12 +311,12 @@ impl CollectIdents for ExprMatch {
 			brace_token: _,
 			arms,
 		} = self;
-		collect!(expr, arms);
+		collect!(map, expr, arms);
 	}
 }
 
 impl CollectIdents for ExprMethodCall {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			receiver,
@@ -326,29 +326,29 @@ impl CollectIdents for ExprMethodCall {
 			paren_token: _,
 			args,
 		} = self;
-		collect!(receiver, turbofish, args);
+		collect!(map, receiver, turbofish, args);
 	}
 }
 
 impl CollectIdents for ExprParen {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			paren_token: _,
 			expr,
 		} = self;
-		collect!(expr);
+		collect!(map, expr);
 	}
 }
 
 impl CollectIdents for ExprPath {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			qself,
 			path,
 		} = self;
-		collect!(qself, path);
+		collect!(map, qself, path);
 
 		if let Some(QSelf {
 			position: pos @ 1..,
@@ -357,25 +357,25 @@ impl CollectIdents for ExprPath {
 		}) = &qself
 		{
 			let trait_segment = &path.segments[pos - 1];
-			cache_trait(&trait_segment.ident);
+			map.insert_trait(&trait_segment.ident);
 		}
 	}
 }
 
 impl CollectIdents for ExprRange {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			start,
 			limits: _,
 			end,
 		} = self;
-		collect!(start, end);
+		collect!(map, start, end);
 	}
 }
 
 impl CollectIdents for ExprRawAddr {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			and_token: _,
@@ -383,24 +383,24 @@ impl CollectIdents for ExprRawAddr {
 			mutability: _,
 			expr,
 		} = self;
-		collect!(expr);
+		collect!(map, expr);
 	}
 }
 
 impl CollectIdents for ExprReference {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			and_token: _,
 			mutability: _,
 			expr,
 		} = self;
-		collect!(expr);
+		collect!(map, expr);
 	}
 }
 
 impl CollectIdents for ExprRepeat {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			bracket_token: _,
@@ -408,23 +408,23 @@ impl CollectIdents for ExprRepeat {
 			semi_token: _,
 			len,
 		} = self;
-		collect!(expr, len);
+		collect!(map, expr, len);
 	}
 }
 
 impl CollectIdents for ExprReturn {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			return_token: _,
 			expr,
 		} = self;
-		collect!(expr);
+		collect!(map, expr);
 	}
 }
 
 impl CollectIdents for ExprStruct {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			qself,
@@ -434,7 +434,7 @@ impl CollectIdents for ExprStruct {
 			dot2_token: _,
 			rest,
 		} = self;
-		collect!(qself, path, rest, fields);
+		collect!(map, qself, path, rest, fields);
 
 		if let Some(QSelf {
 			position: pos @ 1..,
@@ -443,61 +443,61 @@ impl CollectIdents for ExprStruct {
 		}) = &qself
 		{
 			let trait_segment = &path.segments[pos - 1];
-			cache_trait(&trait_segment.ident);
+			map.insert_trait(&trait_segment.ident);
 		}
 
 		if let Some(seg) = path.segments.last() {
-			cache_ty(&seg.ident);
+			map.insert_ty(&seg.ident);
 		}
 	}
 }
 
 impl CollectIdents for ExprTry {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			expr,
 			question_token: _,
 		} = self;
-		collect!(expr);
+		collect!(map, expr);
 	}
 }
 
 impl CollectIdents for ExprTuple {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			paren_token: _,
 			elems,
 		} = self;
-		collect!(elems);
+		collect!(map, elems);
 	}
 }
 
 impl CollectIdents for ExprUnary {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			op: _,
 			expr,
 		} = self;
-		collect!(expr);
+		collect!(map, expr);
 	}
 }
 
 impl CollectIdents for ExprUnsafe {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			unsafe_token: _,
 			block,
 		} = self;
-		collect!(block);
+		collect!(map, block);
 	}
 }
 
 impl CollectIdents for ExprWhile {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			label: _,
@@ -505,55 +505,55 @@ impl CollectIdents for ExprWhile {
 			cond,
 			body,
 		} = self;
-		collect!(cond, body);
+		collect!(map, cond, body);
 	}
 }
 
 impl CollectIdents for ExprYield {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			yield_token: _,
 			expr,
 		} = self;
-		collect!(expr);
+		collect!(map, expr);
 	}
 }
 
 impl CollectIdents for ExprTryBlock {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			try_token: _,
 			block,
 		} = self;
-		collect!(block);
+		collect!(map, block);
 	}
 }
 
 impl CollectIdents for Block {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			brace_token: _,
 			stmts,
 		} = self;
-		collect!(stmts);
+		collect!(map, stmts);
 	}
 }
 
 impl CollectIdents for Stmt {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		match self {
-			Stmt::Local(local) => collect!(local),
-			Stmt::Item(item) => collect!(item),
-			Stmt::Expr(expr, _) => collect!(expr),
-			Stmt::Macro(mac) => collect!(mac),
+			Stmt::Local(local) => collect!(map, local),
+			Stmt::Item(item) => collect!(map, item),
+			Stmt::Expr(expr, _) => collect!(map, expr),
+			Stmt::Macro(mac) => collect!(map, mac),
 		}
 	}
 }
 
 impl CollectIdents for Local {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			let_token: _,
@@ -561,27 +561,27 @@ impl CollectIdents for Local {
 			init,
 			semi_token: _,
 		} = self;
-		collect!(pat, init);
+		collect!(map, pat, init);
 	}
 }
 
 impl CollectIdents for LocalInit {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			eq_token: _,
 			expr,
 			diverge,
 		} = self;
-		collect!(expr);
+		collect!(map, expr);
 
 		if let Some((_, block)) = diverge {
-			collect!(block);
+			collect!(map, block);
 		}
 	}
 }
 
 impl CollectIdents for StmtMacro {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, _map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			mac: _,
@@ -591,7 +591,7 @@ impl CollectIdents for StmtMacro {
 }
 
 impl CollectIdents for Arm {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			pat,
@@ -600,26 +600,26 @@ impl CollectIdents for Arm {
 			body,
 			comma: _,
 		} = self;
-		collect!(pat, body);
+		collect!(map, pat, body);
 
 		if let Some((_, expr)) = guard {
-			collect!(expr);
+			collect!(map, expr);
 		}
 	}
 }
 
 impl CollectIdents for Member {
-	fn collect_idents(&self) {} // nothing to do
+	fn collect_idents(&self, _map: &mut IdentMap) {} // nothing to do
 }
 
 impl CollectIdents for FieldValue {
-	fn collect_idents(&self) {
+	fn collect_idents(&self, map: &mut IdentMap) {
 		let Self {
 			attrs: _,
 			member,
 			colon_token: _,
 			expr,
 		} = self;
-		collect!(member, expr);
+		collect!(map, member, expr);
 	}
 }

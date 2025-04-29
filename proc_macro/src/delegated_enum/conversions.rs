@@ -10,7 +10,7 @@ const HELP_CONVERT_2: &str = "Help: If you do not want to generate conversions, 
 		add the attribute #[no_convert] to this variant";
 
 pub fn generate_variant_try_from_enum(
-	variant: &SaneVariant,
+	variant: &SaneVar,
 	enum_def: &SaneEnum,
 	settings: &Settings,
 ) -> Result<TokenStream> {
@@ -26,13 +26,12 @@ pub fn generate_variant_try_from_enum(
 	let var_ident = &variant.ident;
 	let fn_input = Ident::new("__input", Span::call_site());
 
-	let will_type_be_generated =
-		settings.generate_variants.is_some() && variant.allow_generate_type();
+	let will_type_be_generated = settings.extract_variants.is_some() && variant.allow_extract();
 
 	let (var_ty, if_var_from_enum) = if will_type_be_generated {
 		let var_ty = {
-			let generics = variant.generics.to_tokens_without_bounds()?;
-			quote! { #var_ident #generics }
+			let args = variant.generics.stream_args();
+			quote! { #var_ident #args }
 		};
 
 		let if_var_from_enum = quote! {
@@ -44,12 +43,12 @@ pub fn generate_variant_try_from_enum(
 		(var_ty, if_var_from_enum)
 	} else {
 		match &variant.fields {
-			SaneVariantFields::Named(named) => {
+			SaneVarFields::Named(named) => {
 				if named.fields.len() != 1 {
 					bail!(named => HELP_CONVERT_1, var_ident => HELP_CONVERT_2);
 				}
 
-				let VariantFieldNamed {
+				let VarFieldNamed {
 					ident: field_ident,
 					ty: var_ty,
 					..
@@ -63,12 +62,12 @@ pub fn generate_variant_try_from_enum(
 
 				(quote! { #var_ty }, if_var_from_enum)
 			}
-			SaneVariantFields::Unnamed(unnamed) => {
+			SaneVarFields::Unnamed(unnamed) => {
 				if unnamed.fields.len() != 1 {
 					bail!(unnamed => HELP_CONVERT_1, var_ident => HELP_CONVERT_2);
 				}
 
-				let VariantFieldUnnamed { ty: var_ty, .. } = &unnamed.fields[0];
+				let VarFieldUnnamed { ty: var_ty, .. } = &unnamed.fields[0];
 
 				let if_var_from_enum = quote! {
 					if let #enum_ident::#var_ident(__var) = #fn_input {
@@ -78,7 +77,7 @@ pub fn generate_variant_try_from_enum(
 
 				(quote! { #var_ty }, if_var_from_enum)
 			}
-			SaneVariantFields::Unit => {
+			SaneVarFields::Unit => {
 				bail!(variant.fields => HELP_CONVERT_1, var_ident => HELP_CONVERT_2)
 			}
 		}
@@ -97,7 +96,7 @@ pub fn generate_variant_try_from_enum(
 }
 
 pub fn generate_enum_from_variant(
-	variant: &SaneVariant,
+	variant: &SaneVar,
 	enum_def: &SaneEnum,
 	settings: &Settings,
 ) -> Result<TokenStream> {
@@ -113,13 +112,12 @@ pub fn generate_enum_from_variant(
 	let fn_input = Ident::new("__input", Span::call_site());
 	let var_ident = &variant.ident;
 
-	let will_type_be_generated =
-		settings.generate_variants.is_some() && variant.allow_generate_type();
+	let will_type_be_generated = settings.extract_variants.is_some() && variant.allow_extract();
 
 	let (var_ty, ret_enum_from_var) = if will_type_be_generated {
 		let var_ty = {
-			let generics = variant.generics.to_tokens_without_bounds()?;
-			quote! { #var_ident #generics }
+			let args = variant.generics.stream_args();
+			quote! { #var_ident #args }
 		};
 
 		let ret_enum_from_var = quote! {
@@ -129,12 +127,12 @@ pub fn generate_enum_from_variant(
 		(var_ty, ret_enum_from_var)
 	} else {
 		match &variant.fields {
-			SaneVariantFields::Named(named) => {
+			SaneVarFields::Named(named) => {
 				if named.fields.len() != 1 {
 					bail!(named => HELP_CONVERT_1, var_ident => HELP_CONVERT_2);
 				}
 
-				let VariantFieldNamed {
+				let VarFieldNamed {
 					ident: field_ident,
 					ty: var_ty,
 					..
@@ -146,12 +144,12 @@ pub fn generate_enum_from_variant(
 
 				(quote! { #var_ty }, ret_enum_from_var)
 			}
-			SaneVariantFields::Unnamed(unnamed) => {
+			SaneVarFields::Unnamed(unnamed) => {
 				if unnamed.fields.len() != 1 {
 					bail!(unnamed => HELP_CONVERT_1, var_ident => HELP_CONVERT_2);
 				}
 
-				let VariantFieldUnnamed { ty: var_ty, .. } = &unnamed.fields[0];
+				let VarFieldUnnamed { ty: var_ty, .. } = &unnamed.fields[0];
 
 				let ret_enum_from_var = quote! {
 					#enum_ident::#var_ident(#fn_input)
@@ -159,7 +157,7 @@ pub fn generate_enum_from_variant(
 
 				(quote! { #var_ty }, ret_enum_from_var)
 			}
-			SaneVariantFields::Unit => {
+			SaneVarFields::Unit => {
 				bail!(variant.fields => HELP_CONVERT_1, var_ident => HELP_CONVERT_2)
 			}
 		}

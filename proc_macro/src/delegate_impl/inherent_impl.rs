@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Parse, ToTokens)]
 pub struct InputImplInherent {
-	attrs: Any<InputAttribute>,
+	attrs: Any<Attribute<SynMeta>>,
 	defaultness: Optional<Token![default]>,
 	unsafety: Optional<Token![unsafe]>,
 	impl_token: Token![impl],
@@ -18,7 +18,7 @@ pub fn run(input: InputImplInherent) -> Result<TokenStream> {
 }
 
 struct SaneImplInherent {
-	attrs: Any<InputAttribute>,
+	attrs: Any<Attribute<SynMeta>>,
 	defaultness: Optional<Token![default]>,
 	unsafety: Optional<Token![unsafe]>,
 	impl_token: Token![impl],
@@ -76,7 +76,7 @@ fn sanitize_input(input: InputImplInherent) -> Result<SaneImplInherent> {
 }
 
 struct SaneMethod {
-	attrs: Any<InputAttribute>,
+	attrs: Any<Attribute<SynMeta>>,
 	vis: Visibility,
 	sig: SaneMethodSignature,
 	_semi_token: Token![;],
@@ -174,7 +174,7 @@ fn sanitize_method_signature(input: InputFnSignature) -> Result<SaneMethodSignat
 }
 
 struct SaneNonReceiverFnArg {
-	attrs: Vec<Attribute>,
+	attrs: Vec<SynAttribute>,
 	pat_ident: PatIdent,
 	colon_token: Token![:],
 	ty: Box<Type>,

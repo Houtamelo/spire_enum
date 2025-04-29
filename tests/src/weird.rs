@@ -1,7 +1,7 @@
 #![allow(unused)]
 use super::*;
 
-#[delegated_enum(generate_variants(derive(Debug, Clone)), impl_conversions)]
+#[delegated_enum(extract_variants(derive(Debug, Clone)), impl_conversions)]
 #[derive(Clone)]
 pub enum Entity<'a, 'c: 'a, T, E: Default, const LEN: usize>
 where

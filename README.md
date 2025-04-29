@@ -1,6 +1,20 @@
 # SpireEnum
 
-A Rust library that provides flexible macros that minimize boilerplate code when working with enums, specially with "delegate enums".
+A self-proclaimed enum-macro suite for Rust, providing several macros that aim to make enums great again.
+*(they never stopped being great, but I needed a punchline)*
+
+- `#[delegated_enum]`: Placed on enums, generates a declarative macro that allows you to delegate impls for your enum in a single line.
+  , and/or allows extracting variant types.
+- `#[delegated_impl]`: Placed on impl blocks, works in conjunction with `#[delegated_enum]` to generate your enum's delegated impls.
+- `#[variant_type_table]`: Place on enums, generates a table type that holds exactly one of each of the enums's variants,
+  as well as several useful implementations for that type.
+- `#[variant_generic_table]`: Place on enums, works similarly to `#[variant_type_table]`, except each value on the table is
+  of a generic parameter instead of the variant's type.
+- `#[discriminant_generic_table]`: Place on enums, works similarly to `#[variant_generic_table]`, except this is meant for enums
+  with unit variants, accessing the values is used by indexing with the enum variant itself(instead of the variant's type).
+
+- For more info on the table macros, see each macro's documentation.
+- For more info on `#[delegated_enum]` and `#[delegated_impl]`, keep reading this file.
 
 ## Table of Contents
 
@@ -16,13 +30,13 @@ A Rust library that provides flexible macros that minimize boilerplate code when
             - [1.2.2 `impl_enum_try_into_variants`](#122-impl_enum_try_into_variants)
             - [1.2.3 `impl_variants_into_enum`](#123-impl_variants_into_enum)
         - [1.3 Variant Types Generation](#13-variant-types-generation)
-            - [1.3.1 `generate_variants`](#131-generate_variants)
-            - [1.3.2 `generate_variants( attrs = [attribute_list] )`](#132-generate_variants-attrs--attribute_list-)
-            - [1.3.3 `generate_variants( derive(trait_list) )`](#133-generate_variants-derivetrait_list-)
+            - [1.3.1 `extract_variants`](#131-extract_variants)
+            - [1.3.2 `extract_variants( attrs = [attribute_list] )`](#132-extract_variants-attrs--attribute_list-)
+            - [1.3.3 `extract_variants( derive(trait_list) )`](#133-extract_variants-derivetrait_list-)
     - [2. `#[delegate_impl]` (Inherent/Trait impl attribute macro)](#2-delegate_impl-inherenttrait-impl-attribute-macro)
         - [2.1 Associated Types, Constants and Static Functions](#21-associated-types-constants-and-static-functions)
     - [3. Variant Attributes](#3-variant-attributes)
-        - [3.1 `#[dont_impl_conversions]` / `#[dont_generate_type]` (Variant attributes)](#31-dont_impl_conversions--dont_generate_type-variant-attributes)
+        - [3.1 `#[dont_impl_conversions]` / `#[dont_extract]` (Variant attributes)](#31-dont_impl_conversions--dont_extract-variant-attributes)
         - [3.2 `#[delegate_via(|var| var.foo())]` (Variant attribute)](#32-delegate_viavar-varfoo-variant-attribute)
         - [3.3 `#[delegator]` (Variant field attribute)](#33-delegator-variant-field-attribute)
 - [Example: Basic Usage](#example-basic-usage)
@@ -214,11 +228,11 @@ fn main() {
 
 ```
 
-But that's not where `spire_enum` stops, in this case, it can also help if you specify the setting `generate_variants` in your enum:
+But that's not where `spire_enum` stops, in this case, it can also help if you specify the setting `extract_variants` in your enum:
 
 ```rust ignore
 #[delegated_enum(
-    generate_variants(
+    extract_variants(
         attrs = [derive(Serialize, Deserialize)] // applies these attributes to every variant.
     )
 )]
@@ -231,11 +245,11 @@ enum State {
 }
 ```
 
-That setting will make the macro also generate the types for each variant, so you don't need to declare the types anymore
+That setting will make the macro also generate and extract the types for each variant, so you don't need to declare the types anymore
 
 This is how your entire file would look like with the usage of `spire_enum`
 
-```rust
+```rust ignore
 use spire_enum_macros::{delegated_enum, delegate_impl};
 
 // Trait
@@ -248,7 +262,7 @@ trait IState {
 }
 
 // Enum
-#[delegated_enum(generate_variants(attrs = [derive(Serialize, Deserialize)]))]
+#[delegated_enum(extract_variants(attrs = [derive(Serialize, Deserialize)]))]
 #[derive(Serialize, Deserialize)]
 enum State {
     Idle { time_spent: f64 },
@@ -292,7 +306,7 @@ You thought we were done? Not yet.
 
 When implementing the trait for each variant, there's a good chance you're often converting variants from/into the enum.
 
-```rust
+```rust ignore
 impl IState for Idle {
     /* other functions */
 
@@ -313,7 +327,7 @@ which can be done with the setting `impl_conversions`:
 
 ```rust ignore
 #[delegated_enum(
-    generate_variants(attrs = [derive(Serialize, Deserialize)]),
+    extract_variants(attrs = [derive(Serialize, Deserialize)]),
     impl_conversions, // <----- This setting
 )]
 #[derive(Serialize, Deserialize)]
@@ -378,7 +392,7 @@ Macros 1. and 2. work together by:
   I aimed to provide better features while avoiding that crate's drawbacks (the main ones being lack of hygiene, preserving state between macro invocations).
 - [delegation](https://crates.io/crates/delegation) - A fork of `enum_delegate`, which solves some of the old one's issues - though
   it takes a different approach compared to `spire_enum`.
-- [enum_variant_type](https://crates.io/crates/enum_variant_type) - Provides similar functionality to this crate's `generate_variants` setting.
+- [enum_variant_type](https://crates.io/crates/enum_variant_type) - Provides similar functionality to this crate's `extract_variants` setting.
 
 ## Usage
 
@@ -386,8 +400,8 @@ Macros 1. and 2. work together by:
 
 This attribute is applied to an enum definition to enable delegation capabilities:
 
-```rust
-use spire_enum::delegated_enum;
+```rust ignore
+use spire_enum_macros::delegated_enum;
 
 #[delegated_enum]
 pub enum ApiResponse<T> {
@@ -406,7 +420,7 @@ When used without any settings, `delegated_enum` generates:
 
 - A declarative macro named `delegate_[enum_name]` that can be used to implement delegated traits for the enum.
 
-```rust
+```rust ignore
 #[delegated_enum]
 pub enum MediaContent {
     Text(String),
@@ -419,7 +433,7 @@ pub enum MediaContent {
 
 Which generates the declared enum, and this macro:
 
-```rust
+```rust ignore
 macro_rules! delegate_media_content {
     ($_Self:expr => |$arg:ident| $($Rest:tt)*) => {
         match $_Self {
@@ -446,7 +460,7 @@ pub(crate) use delegate_media_content;
 
 The macro may seem a bit cryptic, but it allows you to manually delegate impls in a very simple way:
 
-```rust
+```rust ignore
 // Let's Imagine that all variants of the enum `MediaContent` implement this trait:
 pub trait OnLoad {
     fn on_after_deserialize(&mut self, cfg: &Cfg);
@@ -489,7 +503,7 @@ For each `Variant`:
 - `TryFrom<Enum>` for `Variant`
 - `From<Variant>` for `Enum`
 
-```rust
+```rust ignore
 #[delegated_enum(
     impl_conversions
 )]
@@ -504,7 +518,7 @@ pub enum MediaContent {
 
 Which additionally generates:
 
-```rust
+```rust ignore
 impl TryFrom<MediaContent> for String {
     type Error = MediaContent;
     fn try_from(__input: MediaContent) -> Result<Self, Self::Error> {
@@ -547,7 +561,7 @@ These implementations facilitate conversions between the enums and its possible 
 This setting is configurable in a per-variant basis, you may skip generating the implementations for certain variants by using the attribute `#
 [dont_impl_conversions]`:
 
-```rust
+```rust ignore
 #[delegated_enum(
     impl_conversions
 )]
@@ -565,7 +579,7 @@ pub enum MediaContent {
 
 Similar to `impl_conversions`, except it only generates `TryFrom<Enum>` for each variant.
 
-```rust
+```rust ignore
 #[delegated_enum(
     impl_enum_try_into_variants
 )]
@@ -582,7 +596,7 @@ pub enum MediaContent {
 
 Similar to `impl_conversions`, except it only generates `From<Variant>` for the enum.
 
-```rust
+```rust ignore
 #[delegated_enum(
     impl_variants_into_enum
 )]
@@ -599,14 +613,12 @@ pub enum MediaContent {
 
 These are specified inside `#[delegated_enum( **here** )]`, separated by commas.
 
-##### 1.3.1 `generate_variants`
+##### 1.3.1 `extract_variants`
 
 Generates a new type for each variant:
 
-```rust
-#[delegated_enum(
-    generate_variants
-)]
+```rust ignore
+#[delegated_enum(extract_variants)]
 pub enum SettingsEnum {
     MaxFps(i32),
     DialogueTextSpeed { speed_percent: i32 },
@@ -617,7 +629,7 @@ pub enum SettingsEnum {
 
 Which additionally generates:
 
-```rust
+```rust ignore
 pub struct MaxFps(pub i32);
 pub struct Vsync(pub bool);
 pub struct Volume(pub i32);
@@ -637,13 +649,13 @@ pub enum SettingsEnum {
 
 Note that the declarative macro `delegate_[enum_name]` is also generated differently to handle the new variant types.
 
-##### 1.3.2 `generate_variants( attrs = [attribute_list] )`
+##### 1.3.2 `extract_variants( attrs = [attribute_list] )`
 
 Applies every attribute in `[attribute_list]` to each generated variant type.
 
-```rust
+```rust ignore
 #[delegated_enum(
-    generate_variants(
+    extract_variants(
         attrs = [cfg(test)]
     )
 )]
@@ -656,7 +668,7 @@ pub enum ApiResource {
 
 Which will generate:
 
-```rust
+```rust ignore
 #[cfg(test)]
 pub struct User(pub UserData);
 
@@ -673,13 +685,13 @@ pub enum ApiResource {
 }
 ```
 
-##### 1.3.3 `generate_variants( derive(trait_list) )`
+##### 1.3.3 `extract_variants( derive(trait_list) )`
 
 Shorthand for `attrs = [derive(trait_list)]`
 
-```rust
+```rust ignore
 #[delegated_enum(
-    generate_variants(derive(Debug, Clone, Serialize, Deserialize))
+    extract_variants(derive(Debug, Clone, Serialize, Deserialize))
 )]
 pub enum ApiResource {
     User(UserData),
@@ -690,7 +702,7 @@ pub enum ApiResource {
 
 Which will generate:
 
-```rust
+```rust ignore
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User(pub UserData);
 
@@ -712,7 +724,7 @@ pub enum ApiResource {
 This attribute should be applied to the enum's implementation blocks:
 
 ```rust ignore
-use spire_enum::delegate_impl;
+use spire_enum_macros::delegate_impl;
 
 #[delegate_impl]
 impl<T: Clone> Clone for ApiResponse<T> {
@@ -724,7 +736,7 @@ impl<T: Clone> Clone for ApiResponse<T> {
 
 Which generates:
 
-```rust
+```rust ignore
 impl<T: Clone> Clone for ApiResponse<T> {
     fn clone(&self) -> Self {
         delegate_api_response! { self.clone().into() }
@@ -742,7 +754,7 @@ item manually if a trait requires these.
 Example:
 
 ```rust ignore
-use spire_enum::{delegated_enum, delegate_impl};
+use spire_enum_macros::{delegated_enum, delegate_impl};
 
 // Suppose you have this trait:
 trait ISetting {
@@ -787,19 +799,19 @@ Note that you may still manually write the implementation of `fn apply(&self)`, 
 
 Attributes that can be applied on a per-variant basis.
 
-#### 3.1 `#[dont_impl_conversions]` / `#[dont_generate_type]` (Variant attributes)
+#### 3.1 `#[dont_impl_conversions]` / `#[dont_extract]` (Variant attributes)
 
-```rust
-#[delegated_enum(generate_variants, impl_conversions)]
+```rust ignore
+#[delegated_enum(extract_variants, impl_conversions)]
 pub enum Config {
     // Don't implement conversion methods (TryFrom<>, From<>) for this variant.
     // Does nothing if `impl_conversions` isn't present.
     #[dont_impl_conversions]
     Default(DefaultConfig),
 
-    // Don't generate the new type for this variant.
-    // Does nothing if `generate_variants` isn't present.
-    #[dont_generate_type]
+    // Don't generate/extract this variant.
+    // Does nothing if `extract_variants` isn't present.
+    #[dont_extract]
     Custom(CustomConfig),
 
     Legacy(LegacyConfig),
@@ -814,8 +826,8 @@ When delegating methods, instead of calling the method directly on the variant, 
 
 Example:
 
-```rust
-#[delegated_enum(generate_variants, impl_conversions)]
+```rust ignore
+#[delegated_enum(extract_variants, impl_conversions)]
 pub enum Config {
     Default(DefaultConfig),
     #[delegate_via(|legacy_config| legacy_config.some_fallback())]
@@ -826,7 +838,7 @@ pub enum Config {
 
 This attribute affects how the macro `delegate_[enum_name]` will be generated, in this, changing it:
 
-```rust
+```rust ignore
 // From
 macro_rules! delegate_config {
     ($_Self:expr => |$arg:ident| $($Rest:tt)*) => {
@@ -880,8 +892,8 @@ Use this to delegate method calls to a field of the variant instead of the varia
 
 Example:
 
-```rust
-#[delegated_enum(generate_variants, impl_conversions)]
+```rust ignore
+#[delegated_enum(extract_variants, impl_conversions)]
 pub enum Config {
     Default(DefaultConfig),
     Legacy { version: i64, #[delegator] config: LegacyConfig },
@@ -891,18 +903,18 @@ pub enum Config {
 
 This will change the Legacy case in the `delegate_[enum_name]` macro:
 
-```
+```ignore
 // From
-Config::Legacy { version: $arg, .. } => { $($Rest)* }
+Config::Legacy { version: $ arg, ..} => { $ ( $ Rest) * }
 
 // To
-Config::Legacy { config: $arg, .. } => { $($Rest)* }
+Config::Legacy { config: $ arg, ..} => { $ ( $ Rest) * }
 ```
 
 ## Example: Basic Usage
 
 ```rust ignore
-use spire_enum::{delegated_enum, delegate_impl};
+use spire_enum_macros::{delegated_enum, delegate_impl};
 
 #[delegated_enum]
 pub enum Value<'a, T>  // Generics are supported.
@@ -931,7 +943,7 @@ println!("{some_variant}");
 SpireEnum is particularly useful for implementing state machines:
 
 ```rust ignore
-// Each state already has its own variant type declared outside the macro, no need to use `generate_variants`. 
+// Each state already has its own variant type declared outside the macro, no need to use `extract_variants`. 
 #[delegated_enum(
     impl_conversions // conversions are nice though
 )]

@@ -1,13 +1,14 @@
 mod conversions;
 mod enum_;
 mod settings;
-mod variants;
+mod variant;
+mod variant_fields;
 
 use conversions::*;
 use enum_::SaneEnum;
 use settings::*;
-pub use variants::fields::*;
-use variants::*;
+use variant::*;
+use variant_fields::*;
 
 use super::*;
 
