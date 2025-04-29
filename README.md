@@ -31,7 +31,7 @@ A self-proclaimed enum-macro suite for Rust, providing several macros that aim t
             - [1.2.3 `impl_variants_into_enum`](#123-impl_variants_into_enum)
         - [1.3 Variant Types Generation](#13-variant-types-generation)
             - [1.3.1 `extract_variants`](#131-extract_variants)
-            - [1.3.2 `extract_variants( attrs = [attribute_list] )`](#132-extract_variants-attrs--attribute_list-)
+            - [1.3.2 `extract_variants( attrs(attribute_list) )`](#132-extract_variants-attrsattribute_list-)
             - [1.3.3 `extract_variants( derive(trait_list) )`](#133-extract_variants-derivetrait_list-)
     - [2. `#[delegate_impl]` (Inherent/Trait impl attribute macro)](#2-delegate_impl-inherenttrait-impl-attribute-macro)
         - [2.1 Associated Types, Constants and Static Functions](#21-associated-types-constants-and-static-functions)
@@ -233,7 +233,7 @@ But that's not where `spire_enum` stops, in this case, it can also help if you s
 ```rust ignore
 #[delegated_enum(
     extract_variants(
-        attrs = [derive(Serialize, Deserialize)] // applies these attributes to every variant.
+        attrs(derive(Serialize, Deserialize)) // applies these attributes to every variant.
     )
 )]
 #[derive(Serialize, Deserialize)]
@@ -262,7 +262,7 @@ trait IState {
 }
 
 // Enum
-#[delegated_enum(extract_variants(attrs = [derive(Serialize, Deserialize)]))]
+#[delegated_enum(extract_variants(derive(Serialize, Deserialize)))]
 #[derive(Serialize, Deserialize)]
 enum State {
     Idle { time_spent: f64 },
@@ -327,7 +327,7 @@ which can be done with the setting `impl_conversions`:
 
 ```rust ignore
 #[delegated_enum(
-    extract_variants(attrs = [derive(Serialize, Deserialize)]),
+    extract_variants(derive(Serialize, Deserialize)),
     impl_conversions, // <----- This setting
 )]
 #[derive(Serialize, Deserialize)]
@@ -649,14 +649,14 @@ pub enum SettingsEnum {
 
 Note that the declarative macro `delegate_[enum_name]` is also generated differently to handle the new variant types.
 
-##### 1.3.2 `extract_variants( attrs = [attribute_list] )`
+##### 1.3.2 `extract_variants( attrs(attribute_list) )`
 
-Applies every attribute in `[attribute_list]` to each generated variant type.
+Applies every attribute in `(attribute_list)` to each generated variant type.
 
 ```rust ignore
 #[delegated_enum(
     extract_variants(
-        attrs = [cfg(test)]
+        attrs(cfg(test))
     )
 )]
 pub enum ApiResource {
@@ -687,7 +687,7 @@ pub enum ApiResource {
 
 ##### 1.3.3 `extract_variants( derive(trait_list) )`
 
-Shorthand for `attrs = [derive(trait_list)]`
+Shorthand for `attrs(derive(trait_list))`
 
 ```rust ignore
 #[delegated_enum(
