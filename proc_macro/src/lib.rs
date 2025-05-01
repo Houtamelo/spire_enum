@@ -20,53 +20,26 @@ use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use shared::*;
 use syn::{
-	Attribute as SynAttribute,
-	Block,
-	Error,
-	Expr,
-	ExprClosure,
-	FnArg,
-	GenericParam,
-	Lifetime,
-	LifetimeParam,
-	Meta as SynMeta,
-	Pat,
-	PatIdent,
-	PatType,
-	Path,
-	Receiver,
-	Result,
-	Type,
-	TypeGroup,
-	TypeParam,
-	TypeParamBound,
-	TypeParen,
-	TypePath,
-	TypePtr,
-	TypeReference,
-	TypeTuple,
-	Visibility,
-	WhereClause,
-	WherePredicate,
-	custom_keyword,
-	parse::ParseStream,
-	spanned::Spanned,
+    Attribute as SynAttribute, Block, Error, Expr, ExprClosure, FnArg, GenericParam, Lifetime,
+    LifetimeParam, Meta as SynMeta, Pat, PatIdent, PatType, Path, Receiver, Result, Type,
+    TypeGroup, TypeParam, TypeParamBound, TypeParen, TypePath, TypePtr, TypeReference, TypeTuple,
+    Visibility, WhereClause, WherePredicate, custom_keyword, parse::ParseStream, spanned::Spanned,
 };
 
 /// See the [crate-level](crate) documentation
 #[proc_macro_attribute]
 pub fn delegated_enum(settings_stream: TokenStream1, enum_stream: TokenStream1) -> TokenStream1 {
-	delegated_enum::run(settings_stream, enum_stream)
-		.unwrap_or_else(|err| err.into_compile_error())
-		.into()
+    delegated_enum::run(settings_stream, enum_stream)
+        .unwrap_or_else(|err| err.into_compile_error())
+        .into()
 }
 
 /// See the [crate-level](crate) documentation
 #[proc_macro_attribute]
 pub fn delegate_impl(_input_stream: TokenStream1, impl_stream: TokenStream1) -> TokenStream1 {
-	delegate_impl::run(impl_stream)
-		.unwrap_or_else(|err| err.into_compile_error())
-		.into()
+    delegate_impl::run(impl_stream)
+        .unwrap_or_else(|err| err.into_compile_error())
+        .into()
 }
 
 /// Given an enum, generates a struct that contains one of each of the enum's variant types,
@@ -208,9 +181,9 @@ pub fn delegate_impl(_input_stream: TokenStream1, impl_stream: TokenStream1) -> 
 /// If you need a similar table but storing a generic value instead of each variant's type, check [`variant_generic_table`].
 #[proc_macro_attribute]
 pub fn variant_type_table(input_stream: TokenStream1, enum_stream: TokenStream1) -> TokenStream1 {
-	tables::variant_type_to_variant_type::run(input_stream, enum_stream)
-		.unwrap_or_else(|err| err.into_compile_error())
-		.into()
+    tables::variant_type_to_variant_type::run(input_stream, enum_stream)
+        .unwrap_or_else(|err| err.into_compile_error())
+        .into()
 }
 
 /// Similar to [`variant_type_table`], except the values associated with each variant
@@ -357,12 +330,12 @@ pub fn variant_type_table(input_stream: TokenStream1, enum_stream: TokenStream1)
 /// If you need a similar table but storing each variant's type, check [`variant_type_table`].
 #[proc_macro_attribute]
 pub fn variant_generic_table(
-	input_stream: TokenStream1,
-	enum_stream: TokenStream1,
+    input_stream: TokenStream1,
+    enum_stream: TokenStream1,
 ) -> TokenStream1 {
-	tables::variant_type_to_generic::run(input_stream, enum_stream)
-		.unwrap_or_else(|err| err.into_compile_error())
-		.into()
+    tables::variant_type_to_generic::run(input_stream, enum_stream)
+        .unwrap_or_else(|err| err.into_compile_error())
+        .into()
 }
 
 /// Similar to [`variant_generic_table`], except this is meant for enums with unit variants.
@@ -470,18 +443,18 @@ pub fn variant_generic_table(
 /// If you need a similar table but with non-unit variants, check [`variant_generic_table`] or [`variant_type_table`].
 #[proc_macro_attribute]
 pub fn discriminant_generic_table(
-	input_stream: TokenStream1,
-	enum_stream: TokenStream1,
+    input_stream: TokenStream1,
+    enum_stream: TokenStream1,
 ) -> TokenStream1 {
-	tables::discriminant_to_generic::run(input_stream, enum_stream)
-		.unwrap_or_else(|err| err.into_compile_error())
-		.into()
+    tables::discriminant_to_generic::run(input_stream, enum_stream)
+        .unwrap_or_else(|err| err.into_compile_error())
+        .into()
 }
 
 fn delegate_macro_ident(enum_ident: &Ident) -> Ident {
-	use convert_case::{Case, Casing};
-	let mut ident = enum_ident.to_string();
-	ident = ident.to_case(Case::Snake);
-	ident.insert_str(0, "delegate_");
-	Ident::new(&ident, Span::call_site())
+    use convert_case::{Case, Casing};
+    let mut ident = enum_ident.to_string();
+    ident = ident.to_case(Case::Snake);
+    ident.insert_str(0, "delegate_");
+    Ident::new(&ident, Span::call_site())
 }

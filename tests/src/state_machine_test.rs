@@ -80,38 +80,38 @@ impl Door<Locked> {
 // Door action enum - no delegated_enum needed here
 #[derive(Clone, Debug)]
 pub enum DoorAction {
-    OpenDoor,
-    CloseDoor,
-    LockDoor,
-    UnlockDoor,
+    Open,
+    Close,
+    Lock,
+    Unlock,
 }
 
 // Implementation of DoorAction without using delegate_impl
 impl DoorAction {
     pub fn apply_to_open_door(self, door: Door<Open>) -> Result<DoorState, &'static str> {
         match self {
-            DoorAction::CloseDoor => Ok(DoorState::Closed(door.close())),
-            DoorAction::OpenDoor => Err("Door is already open"),
-            DoorAction::LockDoor => Err("Cannot lock an open door"),
-            DoorAction::UnlockDoor => Err("Cannot unlock an open door"),
+            DoorAction::Close => Ok(DoorState::Closed(door.close())),
+            DoorAction::Open => Err("Door is already open"),
+            DoorAction::Lock => Err("Cannot lock an open door"),
+            DoorAction::Unlock => Err("Cannot unlock an open door"),
         }
     }
 
     pub fn apply_to_closed_door(self, door: Door<Closed>) -> Result<DoorState, &'static str> {
         match self {
-            DoorAction::OpenDoor => Ok(DoorState::Open(door.open())),
-            DoorAction::CloseDoor => Err("Door is already closed"),
-            DoorAction::LockDoor => Ok(DoorState::Locked(door.lock())),
-            DoorAction::UnlockDoor => Err("Door is not locked"),
+            DoorAction::Open => Ok(DoorState::Open(door.open())),
+            DoorAction::Close => Err("Door is already closed"),
+            DoorAction::Lock => Ok(DoorState::Locked(door.lock())),
+            DoorAction::Unlock => Err("Door is not locked"),
         }
     }
 
     pub fn apply_to_locked_door(self, door: Door<Locked>) -> Result<DoorState, &'static str> {
         match self {
-            DoorAction::OpenDoor => Err("Cannot open a locked door"),
-            DoorAction::CloseDoor => Err("Door is already closed"),
-            DoorAction::LockDoor => Err("Door is already locked"),
-            DoorAction::UnlockDoor => Ok(DoorState::Closed(door.unlock())),
+            DoorAction::Open => Err("Cannot open a locked door"),
+            DoorAction::Close => Err("Door is already closed"),
+            DoorAction::Lock => Err("Door is already locked"),
+            DoorAction::Unlock => Ok(DoorState::Closed(door.unlock())),
         }
     }
 }
@@ -185,28 +185,28 @@ mod tests {
 
         // Try valid and invalid operations
         let state = state
-            .apply_action(DoorAction::CloseDoor)
+            .apply_action(DoorAction::Close)
             .expect("Should close successfully");
         assert_eq!(state.state_name(), "closed");
 
-        let result = state.clone().apply_action(DoorAction::CloseDoor);
+        let result = state.clone().apply_action(DoorAction::Close);
         assert!(result.is_err(), "Closing a closed door should fail");
 
         let state = state
-            .apply_action(DoorAction::LockDoor)
+            .apply_action(DoorAction::Lock)
             .expect("Should lock successfully");
         assert_eq!(state.state_name(), "locked");
 
-        let result = state.clone().apply_action(DoorAction::OpenDoor);
+        let result = state.clone().apply_action(DoorAction::Open);
         assert!(result.is_err(), "Opening a locked door should fail");
 
         let state = state
-            .apply_action(DoorAction::UnlockDoor)
+            .apply_action(DoorAction::Unlock)
             .expect("Should unlock successfully");
         assert_eq!(state.state_name(), "closed");
 
         let state = state
-            .apply_action(DoorAction::OpenDoor)
+            .apply_action(DoorAction::Open)
             .expect("Should open successfully");
         assert_eq!(state.state_name(), "open");
     }
@@ -218,11 +218,11 @@ mod tests {
 
         // Define a sequence of actions
         let actions = vec![
-            DoorAction::CloseDoor,
-            DoorAction::LockDoor,
-            DoorAction::UnlockDoor,
-            DoorAction::OpenDoor,
-            DoorAction::CloseDoor,
+            DoorAction::Close,
+            DoorAction::Lock,
+            DoorAction::Unlock,
+            DoorAction::Open,
+            DoorAction::Close,
         ];
 
         // Expected states after each action
@@ -248,12 +248,12 @@ mod tests {
 
         // Test transitions
         manager = manager
-            .transition(DoorAction::CloseDoor)
+            .transition(DoorAction::Close)
             .expect("Should close successfully");
         assert_eq!(manager.state().state_name(), "closed");
 
         manager = manager
-            .transition(DoorAction::LockDoor)
+            .transition(DoorAction::Lock)
             .expect("Should lock successfully");
         assert_eq!(manager.state().state_name(), "locked");
     }
