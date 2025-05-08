@@ -87,6 +87,10 @@ pub fn delegate_impl(_input_stream: TokenStream1, impl_stream: TokenStream1) -> 
 /// pub fn get<Var>(&self) -> &Var;
 /// pub fn get_mut<Var>(&mut self) -> &mut Var;
 ///
+/// // Set the value of a given variant.
+/// pub fn set::<Var>(&mut self, value: Var);
+/// pub fn set_enum(&mut self, value: Enum);
+///
 /// // Iter by reference/mut-reference
 /// // - EnumRef/Mut: an enum where all variants have the same name as the input enum,
 /// // but contain a reference to the variant's type instead of owning it.
@@ -234,6 +238,9 @@ pub fn variant_type_table(input_stream: TokenStream1, enum_stream: TokenStream1)
 /// // - Var: any of the enum's variant types
 /// pub fn get<Var>(&self) -> &T;
 /// pub fn get_mut<Var>(&mut self) -> &mut T;
+///
+/// // Set the value associated with a given variant's type.
+/// pub fn set::<Var>(&mut self, value: T);
 ///
 /// // Iter by reference/mut-reference
 /// // - EnumRef/Mut: an enum where all variants have the same name as the input enum,
@@ -386,6 +393,9 @@ pub fn variant_generic_table(
 /// // These methods can also be invoked by using indexing (e.g. `&table[VolumeSetting::Main]`)
 /// pub const fn get(&self, Enum) -> &T;
 /// pub const fn get_mut(&mut self, Enum) -> &mut T;
+///
+/// // Set the value associated with a given variant.
+/// pub fn set(&mut self, var: Enum, value: T);
 ///
 /// // Iter by reference/mut-reference
 /// pub fn iter(&lf self) -> impl Iterator<Item = (Enum, &T)>;
