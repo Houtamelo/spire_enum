@@ -501,6 +501,8 @@ Enable automatic generation of conversion methods between the enum and its varia
 For each `Variant`:
 
 - `TryFrom<Enum>` for `Variant`
+- `TryFrom<&Enum>` for `&Variant`
+- `TryFrom<&mut Enum>` for `&mut Variant`
 - `From<Variant>` for `Enum`
 
 ```rust ignore
@@ -521,35 +523,83 @@ Which additionally generates:
 ```rust ignore
 impl TryFrom<MediaContent> for String {
     type Error = MediaContent;
-    fn try_from(__input: MediaContent) -> Result<Self, Self::Error> {
-        if let MediaContent::Text(__var) = __input {
+    fn try_from(_value: MediaContent) -> Result<Self, Self::Error> {
+        if let MediaContent::Text(__var) = _value {
             Ok(__var)
         } else {
-            Err(__input)
+            Err(_value)
+        }
+    }
+}
+
+impl<'_r1> TryFrom<&'_r1 MediaContent> for &'_r1 String {
+    type Error = ();
+
+    fn try_from(_value: &'_r1 MediaContent) -> Result<Self, Self::Error> {
+        if let MediaContent::Text(__var) = _value {
+            Ok(__var)
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl<'_r1> TryFrom<&'_r1 mut MediaContent> for &'_r1 mut String {
+    type Error = ();
+
+    fn try_from(_value: &'_r1 mut MediaContent) -> Result<Self, Self::Error> {
+        if let MediaContent::Text(__var) = _value {
+            Ok(__var)
+        } else {
+            Err(())
         }
     }
 }
 
 impl From<String> for MediaContent {
-    fn from(__input: String) -> Self {
-        MediaContent::Text(__input)
+    fn from(_value: String) -> Self {
+        MediaContent::Text(_value)
     }
 }
 
 impl TryFrom<MediaContent> for ImageData {
     type Error = MediaContent;
-    fn try_from(__input: MediaContent) -> Result<Self, Self::Error> {
-        if let MediaContent::Image(__var) = __input {
+    fn try_from(_value: MediaContent) -> Result<Self, Self::Error> {
+        if let MediaContent::Image(__var) = _value {
             Ok(__var)
         } else {
-            Err(__input)
+            Err(_value)
+        }
+    }
+}
+
+impl<'_r1> TryFrom<&'_r1 MediaContent> for &'_r1 ImageData {
+    type Error = ();
+
+    fn try_from(_value: &'_r1 MediaContent) -> Result<Self, Self::Error> {
+        if let MediaContent::Image(__var) = _value {
+            Ok(__var)
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl<'_r1> TryFrom<&'_r1 mut MediaContent> for &'_r1 mut ImageData {
+    type Error = ();
+
+    fn try_from(_value: &'_r1 mut MediaContent) -> Result<Self, Self::Error> {
+        if let MediaContent::Image(__var) = _value {
+            Ok(__var)
+        } else {
+            Err(())
         }
     }
 }
 
 impl From<ImageData> for MediaContent {
-    fn from(__input: ImageData) -> Self {
-        MediaContent::Image(__input)
+    fn from(_value: ImageData) -> Self {
+        MediaContent::Image(_value)
     }
 }
 
@@ -577,7 +627,7 @@ pub enum MediaContent {
 
 ##### 1.2.2 `impl_enum_try_into_variants`
 
-Similar to `impl_conversions`, except it only generates `TryFrom<Enum>` for each variant.
+Similar to `impl_conversions`, except it only generates `TryFrom<Enum>`, `TryFrom<&Enum>` and `TryFrom<&mut Enum>` for each variant.
 
 ```rust ignore
 #[delegated_enum(

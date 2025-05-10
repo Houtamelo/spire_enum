@@ -1,6 +1,6 @@
 [package]
 name = "spire_enum_macros"
-version = "0.2.3"
+version = "0.3.0"
 authors = ["Houtamelo <houtamelo@pm.me>"]
 description = "Procedural macros to facilitate enum usage, such as when delegating implementations, extracting variant types, or creating enum tables."
 edition = "2024"
