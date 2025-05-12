@@ -13,8 +13,8 @@ mod weird;
 
 use std::fmt::Debug;
 
-use spire_enum_macros::*;
+use spire_enum::prelude::*;
 
 fn main() {
-	println!("Hello, world!");
+    println!("Hello, world!");
 }

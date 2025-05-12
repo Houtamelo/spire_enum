@@ -51,45 +51,31 @@ impl Setting for SettingsEnum {
 }
 
 impl Setting for MaxFps {
-    fn key(&self) -> &'static str {
-        "max_fps"
-    }
+    fn key(&self) -> &'static str { "max_fps" }
 }
 
 impl Setting for DialogueTextSpeed {
-    fn key(&self) -> &'static str {
-        "dialogue_text_speed"
-    }
+    fn key(&self) -> &'static str { "dialogue_text_speed" }
 }
 
 impl Setting for Vsync {
-    fn key(&self) -> &'static str {
-        "vsync"
-    }
+    fn key(&self) -> &'static str { "vsync" }
 }
 
 impl Setting for MainVolume {
-    fn key(&self) -> &'static str {
-        "main_volume"
-    }
+    fn key(&self) -> &'static str { "main_volume" }
 }
 
 impl Setting for MusicVolume {
-    fn key(&self) -> &'static str {
-        "music_volume"
-    }
+    fn key(&self) -> &'static str { "music_volume" }
 }
 
 impl Setting for SfxVolume {
-    fn key(&self) -> &'static str {
-        "sfx_volume"
-    }
+    fn key(&self) -> &'static str { "sfx_volume" }
 }
 
 impl Setting for VoiceVolume {
-    fn key(&self) -> &'static str {
-        "voice_volume"
-    }
+    fn key(&self) -> &'static str { "voice_volume" }
 }
 
 macro_rules! impl_defaults {
@@ -143,9 +129,7 @@ impl SpireWindowMode {
 }
 
 impl Setting for SpireWindowMode {
-    fn key(&self) -> &'static str {
-        "window_mode"
-    }
+    fn key(&self) -> &'static str { "window_mode" }
 }
 
 const DISPLAY_SKILL_OVERLAY_MODE_AUTO: &str = "Auto";
@@ -159,9 +143,7 @@ pub enum SkillOverlayMode {
 }
 
 impl Default for SkillOverlayMode {
-    fn default() -> Self {
-        SkillOverlayMode::Auto { delay_ms: 3000 }
-    }
+    fn default() -> Self { SkillOverlayMode::Auto { delay_ms: 3000 } }
 }
 
 // Pending Translation Hook
@@ -187,16 +169,19 @@ impl SkillOverlayMode {
 }
 
 impl Setting for SkillOverlayMode {
-    fn key(&self) -> &'static str {
-        "skill_overlay_mode"
-    }
+    fn key(&self) -> &'static str { "skill_overlay_mode" }
 }
 
 #[test]
 fn test() {
+    use spire_enum::prelude::EnumExtensions;
+
     let enum_ref = &SettingsEnum::SkillOverlayMode(SkillOverlayMode::WaitForInput);
     let skill_overlay_mode: &SkillOverlayMode = enum_ref.try_into().unwrap();
     assert_eq!(*skill_overlay_mode, SkillOverlayMode::WaitForInput);
+
+    assert!(enum_ref.is_var::<SkillOverlayMode>());
+    assert!(enum_ref.try_ref_var::<MaxFps>().is_none());
 
     let enum_ref = &mut SettingsEnum::MainVolume(MainVolume(50));
     assert_eq!(<&mut MainVolume>::try_from(enum_ref), Ok(&mut MainVolume(50)));

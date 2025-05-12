@@ -153,7 +153,7 @@ You can imagine how verbose this gets, you need to match on all the variants, **
 First, we can generate those big match statements for you, which you replace by calling the generated `delegate_state!` macro:
 
 ```rust ignore
-use spire_enum_macros::delegated_enum;
+use spire_enum::prelude::delegated_enum;
 
 #[delegated_enum]
 #[derive(Serialize, Deserialize)]
@@ -193,7 +193,7 @@ fn main() {
 `spire_enum` can take it a step further though: instead of having you invoke that macro everytime, why not just let it implement the trait `IState` for your enum?
 
 ```rust ignore
-use spire_enum_macros::delegate_impl;
+use spire_enum::prelude::delegate_impl;
 
 #[delegate_impl]
 impl IState for State {
@@ -250,7 +250,7 @@ That setting will make the macro also generate and extract the types for each va
 This is how your entire file would look like with the usage of `spire_enum`
 
 ```rust ignore
-use spire_enum_macros::{delegated_enum, delegate_impl};
+use spire_enum::prelude::{delegated_enum, delegate_impl};
 
 // Trait
 trait IState {
@@ -322,7 +322,7 @@ impl IState for Idle {
 
 That's the least of our worries, but it doesn't mean we can't do better.
 
-Let's have `spire_enum` generate conversions implementations too (From<Variant> for Enum, TryFrom<Enum> for Variant),
+Let's have `spire_enum` generate conversions implementations too (`From<Variant>` for Enum, `TryFrom<Enum>` for Variant),
 which can be done with the setting `impl_conversions`:
 
 ```rust ignore
@@ -401,7 +401,7 @@ Macros 1. and 2. work together by:
 This attribute is applied to an enum definition to enable delegation capabilities:
 
 ```rust ignore
-use spire_enum_macros::delegated_enum;
+use spire_enum::prelude::delegated_enum;
 
 #[delegated_enum]
 pub enum ApiResponse<T> {
@@ -608,6 +608,29 @@ impl From<ImageData> for MediaContent {
 
 These implementations facilitate conversions between the enums and its possible variants, especially when each variant has a unique type.
 
+---
+
+The setting also generates a set of custom trait implementations provided by `spire_enum`:
+
+- `FromEnum`/`FromEnumRef`/`FromEnumMut` for `Variant`
+
+These traits allow `spire_enum::prelude::EnumExtensions` to be implemented for your enum,
+which provides even more utilities for enum-variant conversion:
+
+```rust ignore
+use spire_enum::prelude::EnumExtensions;
+
+let media = MediaContent::Text("hello world".to_string());
+assert!(media.is_var::<String>());
+assert!(media.try_ref_var::<ImageData>().is_none());
+assert_eq!(*media.try_mut_var::<String>(), "hello world");
+assert_eq!(media.try_into_var::<String>(), Ok("hello world".to_string()));
+```
+
+For more information, read the trait `EnumExtensions`'s documentation.
+
+---
+
 This setting is configurable in a per-variant basis, you may skip generating the implementations for certain variants by using the attribute `#
 [dont_impl_conversions]`:
 
@@ -774,7 +797,7 @@ pub enum ApiResource {
 This attribute should be applied to the enum's implementation blocks:
 
 ```rust ignore
-use spire_enum_macros::delegate_impl;
+use spire_enum::prelude::delegate_impl;
 
 #[delegate_impl]
 impl<T: Clone> Clone for ApiResponse<T> {
@@ -804,7 +827,7 @@ item manually if a trait requires these.
 Example:
 
 ```rust ignore
-use spire_enum_macros::{delegated_enum, delegate_impl};
+use spire_enum::prelude::{delegated_enum, delegate_impl};
 
 // Suppose you have this trait:
 trait ISetting {
@@ -964,7 +987,7 @@ Config::Legacy { config: $ arg, ..} => { $ ( $ Rest) * }
 ## Example: Basic Usage
 
 ```rust ignore
-use spire_enum_macros::{delegated_enum, delegate_impl};
+use spire_enum::prelude::{delegated_enum, delegate_impl};
 
 #[delegated_enum]
 pub enum Value<'a, T>  // Generics are supported.

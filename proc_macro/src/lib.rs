@@ -1,4 +1,8 @@
-#![doc = include_str!("../../README.md")]
+//! This crate contains procedural macros distributed by the crate [`spire_enum`](https://crates.io/crates/spire_enum).
+//!
+//! It is not recommended to use this crate directly, instead, use [`spire_enum`](https://crates.io/crates/spire_enum) instead.
+//!
+//! For more information, read the main crate's [documentation](https://github.com/Houtamelo/spire_enum/blob/main/README.md).
 #![forbid(unsafe_code)]
 
 extern crate proc_macro;
@@ -182,7 +186,7 @@ pub fn delegate_impl(_input_stream: TokenStream1, impl_stream: TokenStream1) -> 
 /// uncovered generics result in implementations that conflict with all types,
 /// since T can be anything.
 ///
-/// If you need a similar table but storing a generic value instead of each variant's type, check [`variant_generic_table`].
+/// If you need a similar table but storing a generic value instead of each variant's type, check [`macro@variant_generic_table`].
 #[proc_macro_attribute]
 pub fn variant_type_table(input_stream: TokenStream1, enum_stream: TokenStream1) -> TokenStream1 {
     tables::variant_type_to_variant_type::run(input_stream, enum_stream)
@@ -190,7 +194,7 @@ pub fn variant_type_table(input_stream: TokenStream1, enum_stream: TokenStream1)
         .into()
 }
 
-/// Similar to [`variant_type_table`], except the values associated with each variant
+/// Similar to [`macro@variant_type_table`], except the values associated with each variant
 /// are a generic parameter, instead of each variant's type.
 ///
 /// Given an enum, generates a struct that contains a generic value
@@ -333,8 +337,8 @@ pub fn variant_type_table(input_stream: TokenStream1, enum_stream: TokenStream1)
 /// uncovered generics result in implementations that conflict with all types,
 /// since T can be anything.
 ///
-/// If you need a similar table but with unit variants, check [`discriminant_generic_table`].
-/// If you need a similar table but storing each variant's type, check [`variant_type_table`].
+/// If you need a similar table but with unit variants, check [`macro@discriminant_generic_table`].
+/// If you need a similar table but storing each variant's type, check [`macro@variant_type_table`].
 #[proc_macro_attribute]
 pub fn variant_generic_table(
     input_stream: TokenStream1,
@@ -345,7 +349,7 @@ pub fn variant_generic_table(
         .into()
 }
 
-/// Similar to [`variant_generic_table`], except this is meant for enums with unit variants.
+/// Similar to [`macro@variant_generic_table`], except this is meant for enums with unit variants.
 ///
 /// Given an enum, generates a struct that contains a generic value
 /// mapped to one of each of the enum's variants,
@@ -450,7 +454,7 @@ pub fn variant_generic_table(
 /// ## Limitations
 /// All variants should be unit variants (they cannot have any fields).
 ///
-/// If you need a similar table but with non-unit variants, check [`variant_generic_table`] or [`variant_type_table`].
+/// If you need a similar table but with non-unit variants, check [`macro@variant_generic_table`] or [`macro@variant_type_table`].
 #[proc_macro_attribute]
 pub fn discriminant_generic_table(
     input_stream: TokenStream1,
