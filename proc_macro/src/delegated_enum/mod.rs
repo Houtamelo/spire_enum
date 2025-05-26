@@ -13,6 +13,6 @@ use variant_fields::*;
 use super::*;
 
 pub fn run(settings_stream: TokenStream1, enum_stream: TokenStream1) -> Result<TokenStream> {
-	let settings = parse_settings(settings_stream)?;
-	enum_::run(enum_stream, settings)
+    let settings = parse_settings(settings_stream.into())?;
+    enum_::run(enum_stream, settings)
 }

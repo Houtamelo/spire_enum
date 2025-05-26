@@ -5,6 +5,7 @@ mod documentation;
 mod enum_;
 mod generics;
 mod optional;
+mod punctuated;
 mod settings;
 mod variant;
 
@@ -14,5 +15,6 @@ pub use documentation::*;
 pub use enum_::*;
 pub use generics::*;
 pub use optional::*;
+pub use punctuated::*;
 pub use settings::*;
 pub use variant::*;

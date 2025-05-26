@@ -10,25 +10,25 @@ macro_rules! bail {
 }
 
 macro_rules! err_expected_only_one {
-	($span1:expr, $span2:expr) => {{
-		let err = {
-			let mut _temp = Error::new($span1.span(), "expected only one, first occurrence here");
-			_temp.combine(Error::new($span2.span(), "second occurrence here"));
-			_temp
-		};
+    ($span1:expr, $span2:expr) => {{
+        let err = {
+            let mut _temp = Error::new($span1.span(), "expected only one, first occurrence here");
+            _temp.combine(Error::new($span2.span(), "second occurrence here"));
+            _temp
+        };
 
-		return Err(err);
-	}};
+        return Err(err);
+    }};
 }
 
 macro_rules! assign_unique_or_panic {
-	($maybe_first:expr, $second:expr) => {
-		if let _Some(first) = $maybe_first {
-			err_expected_only_one!(first, $second);
-		} else {
-			$maybe_first = _Some($second);
-		}
-	};
+    ($maybe_first:expr, $second:expr) => {
+        if let _Some(first) = $maybe_first {
+            err_expected_only_one!(first, $second);
+        } else {
+            $maybe_first = _Some($second);
+        }
+    };
 }
 
 pub(crate) use assign_unique_or_panic;

@@ -70,7 +70,7 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
         let docs_new = docs_tokens(format!(
             "Constructs a new instance of the type.\n\n\
 			 Since this table guarantees that it contains exactly one value for each variant of [`{enum_ident}`],\
-			 all variants's values must be initialized during construction."
+			 all variants' values must be initialized during construction."
         ));
 
         let from_fn_example = r###"
@@ -303,6 +303,7 @@ fn sanitize_enum(input: Enum<SynMeta, SynMeta>) -> Result<SaneEnum> {
 
     let variants = variants
 		.into_inner()
+        .inner
 		.into_iter()
 		.map(|Var { ident, fields, .. }| {
 			const HELP: &str =

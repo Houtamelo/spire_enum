@@ -9,13 +9,10 @@ pub trait Setting {
     fn on_confirm(&self) {}
 }
 
-#[delegated_enum(
-    extract_variants(derive(Debug, Clone, Copy, PartialEq)),
-    impl_conversions
-)]
+#[delegated_enum(extract_variants(inherit_enum_derives), impl_conversions)]
 #[variant_type_table]
 #[variant_generic_table]
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SettingsEnum {
     #[dont_extract]
     SpireWindowMode(SpireWindowMode),
@@ -98,7 +95,7 @@ impl_defaults! {
     VoiceVolume = 50,
 }
 
-#[derive(Default, Clone, Copy, Debug)]
+#[derive(Default, Clone, Copy, Debug, PartialEq)]
 pub enum SpireWindowMode {
     Windowed = 0,
     #[default]

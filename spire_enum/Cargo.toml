@@ -13,5 +13,5 @@ categories = ["rust-patterns"]
 include = ["../LICENSE", "../README.md", "/src"]
 
 [dependencies]
-#spire_enum_macros = "0.4.0"
+#spire_enum_macros = "0.6.0"
 spire_enum_macros = { path = "./../proc_macro" }

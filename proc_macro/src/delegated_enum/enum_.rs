@@ -20,10 +20,22 @@ pub(super) fn run(enum_stream: TokenStream1, settings: Settings) -> Result<Token
     if let _Some(SaneSettingExtractVariants {
         kw: _,
         attrs: each_attrs,
+        enum_derives,
     }) = &settings.extract_variants
     {
+        let derive_list = enum_derives
+            .is_some()
+            .then(|| gather_enum_derives(&enum_def));
+
+        let enum_derives = derive_list.as_deref().unwrap_or_default();
+
         for var in enum_def.variants.iter().filter(|var| var.allow_extract()) {
-            stream.extend(generate_variant_type_definition(var, &enum_def, each_attrs));
+            stream.extend(generate_variant_type_definition(
+                var,
+                &enum_def,
+                each_attrs,
+                enum_derives,
+            ));
         }
     }
 
@@ -88,6 +100,7 @@ fn sanitize_input(
     let (brace, variants) = variants.into_parts();
 
     let variants = variants
+        .inner
         .into_iter()
         .map(|var| sanitize_variant(var, settings, &generics))
         .try_collect::<_, Vec<_>, _>()?;
@@ -500,4 +513,18 @@ fn handle_delegator_field_named(
             quote! { #enum_ident::#var_ident { #field_ident, .. } => { #field_ident $($Rest)* } },
         )
     }
+}
+
+fn gather_enum_derives(enum_def: &SaneEnum) -> Vec<&Attribute<SynMeta>> {
+    enum_def
+        .attrs
+        .iter()
+        .filter(|attr| {
+            if let SynMeta::List(meta_list) = &*attr.inner {
+                meta_list.path.is_ident("derive")
+            } else {
+                false
+            }
+        })
+        .collect()
 }

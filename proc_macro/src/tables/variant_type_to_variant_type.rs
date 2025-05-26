@@ -351,6 +351,7 @@ fn sanitize_enum(input: Enum<SynMeta, SynMeta>) -> Result<SaneEnum> {
 
     let variants = variants
         .into_inner()
+        .inner
         .into_iter()
         .map(|Var { ident, fields, .. }| {
             const HELP: &str =
@@ -359,7 +360,7 @@ fn sanitize_enum(input: Enum<SynMeta, SynMeta>) -> Result<SaneEnum> {
             match fields {
                 VarFields::Named(named) => {
                     if named.len() == 1 {
-                        let ty = named.into_inner().into_iter().next().unwrap().ty;
+                        let ty = named.into_inner().inner.into_iter().next().unwrap().ty;
                         Ok(SaneVariant {
                             table_field_ident: var_to_field_ident(&ident),
                             ident,
@@ -371,7 +372,7 @@ fn sanitize_enum(input: Enum<SynMeta, SynMeta>) -> Result<SaneEnum> {
                 }
                 VarFields::Unnamed(unnamed) => {
                     if unnamed.len() == 1 {
-                        let ty = unnamed.into_inner().into_iter().next().unwrap().ty;
+                        let ty = unnamed.into_inner().inner.into_iter().next().unwrap().ty;
                         Ok(SaneVariant {
                             table_field_ident: var_to_field_ident(&ident),
                             ident,

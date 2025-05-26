@@ -33,6 +33,7 @@ A self-proclaimed enum-macro suite for Rust, providing several macros that aim t
             - [1.3.1 `extract_variants`](#131-extract_variants)
             - [1.3.2 `extract_variants( attrs(attribute_list) )`](#132-extract_variants-attrsattribute_list-)
             - [1.3.3 `extract_variants( derive(trait_list) )`](#133-extract_variants-derivetrait_list-)
+            - [1.3.4 `extract_variants( inherit_enum_derives )`](#133-extract_variants-inherit_enum_derives-)
     - [2. `#[delegate_impl]` (Inherent/Trait impl attribute macro)](#2-delegate_impl-inherenttrait-impl-attribute-macro)
         - [2.1 Associated Types, Constants and Static Functions](#21-associated-types-constants-and-static-functions)
     - [3. Variant Attributes](#3-variant-attributes)
@@ -789,6 +790,25 @@ pub enum ApiResource {
     User(User),
     Post(Post),
     Comment(Comment),
+}
+```
+
+##### 1.3.4 `extract_variants( inherit_enum_derives )`
+
+Applies the same derives the enum has to each generated variant type.
+
+```rust ignore
+#[delegated_enum(
+    extract_variants(
+        // In this case, the setting accomplishes the same as `derive(Debug, Clone, Serialize, Deserialize)`.
+        inherit_enum_derives,
+    )
+)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ApiResource {
+    User(UserData),
+    Post(PostData),
+    Comment(CommentData),
 }
 ```
 
