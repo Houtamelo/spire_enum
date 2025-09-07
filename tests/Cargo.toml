@@ -5,3 +5,13 @@ edition = "2021"
 
 [dependencies]
 spire_enum = { path = "./../spire_enum" }
+
+[features]
+default = []
+cond_comp = []
+cond_comp_beta = []
+cond_comp_advanced = []
+cond_comp_experimental = []
+cond_comp_graphics = []
+cond_comp_networking = []
+cond_comp_audio = []

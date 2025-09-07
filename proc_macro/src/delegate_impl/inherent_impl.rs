@@ -261,8 +261,10 @@ fn generate_output(sane: SaneImplInherent) -> Result<TokenStream> {
 
         let invocation_args = other_inputs.iter().map(
             |SaneNonReceiverFnArg {
+                 attrs: _,
                  pat_ident: PatIdent { ident, .. },
-                 ..
+                 colon_token: _,
+                 ty: _,
              }| ident,
         );
 

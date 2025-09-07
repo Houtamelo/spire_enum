@@ -6,8 +6,7 @@ mod var_kw {
 }
 
 use var_kw::{
-    delegate_via as kw_delegate_via,
-    dont_extract as kw_dont_extract,
+    delegate_via as kw_delegate_via, dont_extract as kw_dont_extract,
     dont_impl_conversions as kw_dont_impl_conversions,
 };
 
@@ -27,7 +26,14 @@ pub(super) fn generate_variant_type_definition(
     enum_derives: &[&Attribute<SynMeta>],
 ) -> TokenStream {
     let SaneVar {
-        attrs: SaneVariantAttributes { syn_attrs, .. },
+        attrs:
+            SaneVariantAttributes {
+                syn_attrs: var_syn_attrs,
+                cfg_attrs: var_cfg_attrs,
+                no_var_type: _,
+                no_convert: _,
+                delegate_via: _,
+            },
         ident: var_ident,
         fields,
         discriminant: _,
@@ -65,8 +71,9 @@ pub(super) fn generate_variant_type_definition(
     };
 
     quote! {
+        #var_cfg_attrs
         #(#enum_derives)*
-        #syn_attrs
+        #var_syn_attrs
         #( #[#extra_attrs] )*
         #vis struct #var_ident #generics #fields_and_where_clause
     }
@@ -77,7 +84,14 @@ pub(super) fn generate_enum_variant_definition(
     settings: &Settings,
 ) -> Result<TokenStream> {
     let SaneVar {
-        attrs: SaneVariantAttributes { syn_attrs, .. },
+        attrs:
+            SaneVariantAttributes {
+                syn_attrs: var_syn_attrs,
+                cfg_attrs: var_cfg_attrs,
+                no_var_type: _,
+                no_convert: _,
+                delegate_via: _,
+            },
         ident: var_ident,
         fields,
         discriminant,
@@ -106,12 +120,14 @@ pub(super) fn generate_enum_variant_definition(
         };
 
         Ok(quote! {
-            #syn_attrs
+            #var_cfg_attrs
+            #var_syn_attrs
             #var_ident ( #var_ty )
         })
     } else {
         Ok(quote! {
-            #syn_attrs
+            #var_cfg_attrs
+            #var_syn_attrs
             #var_ident #fields #discriminant
         })
     }
@@ -132,8 +148,12 @@ pub enum ExplicitDelegator {
 }
 
 impl SaneVar {
-    pub fn allow_extract(&self) -> bool { self.attrs.no_var_type.is_none() }
-    pub fn allow_generate_conversions(&self) -> bool { self.attrs.no_convert.is_none() }
+    pub fn allow_extract(&self) -> bool {
+        self.attrs.no_var_type.is_none()
+    }
+    pub fn allow_generate_conversions(&self) -> bool {
+        self.attrs.no_convert.is_none()
+    }
 }
 
 pub(super) fn sanitize_variant(
@@ -178,16 +198,18 @@ pub(super) fn sanitize_variant(
 #[derive(Default)]
 pub struct SaneVariantAttributes {
     pub syn_attrs: Any<Attribute<SynMeta>>,
+    pub cfg_attrs: Any<Attribute<CfgMeta>>,
     pub no_var_type: Optional<kw_dont_extract>,
     pub no_convert: Optional<kw_dont_impl_conversions>,
     pub delegate_via: Optional<(kw_delegate_via, Box<Paren<ExprClosure>>)>,
 }
 
 fn sanitize_attributes(attrs: Any<Attribute<Meta<VarMeta>>>) -> Result<SaneVariantAttributes> {
-    let (syn_attrs, custom_attrs) = split_input_attrs(attrs);
+    let (syn_attrs, cfg_attrs, custom_attrs) = split_input_attrs(attrs);
 
     let mut sane = SaneVariantAttributes {
         syn_attrs,
+        cfg_attrs,
         ..SaneVariantAttributes::default()
     };
 

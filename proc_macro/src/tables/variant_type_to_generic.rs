@@ -14,7 +14,12 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
     let lf = Lifetime::new("'_r", Span::call_site());
     let gen_t = Ident::new("Value", Span::call_site());
 
-    let mod_ident = if let _Some(SettingModName { name, .. }) = table_attrs.mod_name {
+    let mod_ident = if let _Some(SettingModName {
+        kw: _,
+        eq_token: _,
+        name,
+    }) = table_attrs.mod_name
+    {
         name
     } else {
         let mut enum_lower = enum_ident.to_string();
@@ -22,7 +27,12 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
         Ident::new(&format!("{enum_lower}_variant_generic_table"), Span::call_site())
     };
 
-    let table_ident = if let _Some(SettingTypeName { name, .. }) = table_attrs.ty_name {
+    let table_ident = if let _Some(SettingTypeName {
+        kw: _,
+        eq_token: _,
+        name,
+    }) = table_attrs.ty_name
+    {
         name
     } else {
         Ident::new(&format!("{enum_ident}VariantGenericTable"), Span::call_site())
@@ -39,6 +49,11 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
     let fields = variants
         .iter()
         .map(|var| &var.table_field_ident)
+        .collect::<Vec<_>>();
+
+    let var_cfgs = variants
+        .iter()
+        .map(|var| &var.cfg_attrs)
         .collect::<Vec<_>>();
 
     const MACRO_LINK: &str = "spire_enum_macros::variant_generic_table";
@@ -59,7 +74,10 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
             #docs
             #(#[#attrs])*
             #vis struct #table_ident<#gen_t> {
-                #(pub #fields: #gen_t),*
+                #(
+                    #var_cfgs
+                    pub #fields: #gen_t
+                ),*
             }
         }
     };
@@ -79,7 +97,10 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
         quote! {
             #docs
             #vis enum #enum_ref_ident #gen_lf_params {
-                #(#var_idents(&#lf #gen_t)),*
+                #(
+                    #var_cfgs
+                    #var_idents(&#lf #gen_t)
+                ),*
             }
         }
     };
@@ -97,7 +118,10 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
         quote! {
             #docs
             #vis enum #enum_mut_ident #gen_lf_params {
-                #(#var_idents(&#lf mut #gen_t)),*
+                #(
+                    #var_cfgs
+                    #var_idents(&#lf mut #gen_t)
+                ),*
             }
         }
     };
@@ -109,13 +133,16 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
             "{DOCS_INTRO}\n\n\
 			 An enum that mirrors the variant names of [`{enum_ident}`], although each variant of this enum \
 			 contains the same generic [`{gen_t}`].\n\n\
-			 This enum is used when converting the type [`{table_ident}`] into a iterator."
+			 This enum is used when converting the type [`{table_ident}`] into an iterator."
         ));
 
         quote! {
             #docs
             #vis enum #enum_own_ident #gen_params {
-                #(#var_idents(#gen_t)),*
+                #(
+                    #var_cfgs
+                    #var_idents(#gen_t)
+                ),*
             }
         }
     };
@@ -132,6 +159,7 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
 
     let key_in_impls = variants.iter().map(
         |SaneVariant {
+            cfg_attrs,
             ident: _,
             table_field_ident,
             ty,
@@ -140,6 +168,7 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
             let var_params = var_generics.stream_params();
 
             quote! {
+                #cfg_attrs
                 #[doc(hidden)]
 				impl #var_params #key_trait_ty for #ty {
 					fn __get_in_table<'__a, #gen_t>(table: &'__a #table_ty) -> &'__a #gen_t where #gen_t: '__a {
@@ -153,12 +182,18 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
         },
     );
 
-    let length = variants.len();
+    let len_ident = {
+        let table_upper = table_ident.to_string().to_case(Case::Constant);
+        Ident::new(&format!("{}_LEN", table_upper), Span::call_site())
+    };
+
+    let len_def = length_definition(&len_ident, var_cfgs.iter().cloned());
+
     let table_impls = {
         let docs_new = docs_tokens(format!(
             "Constructs a new instance of the type.\n\n\
 			 Since this table guarantees that it contains exactly one value for each variant of [`{enum_ident}`],\
-			 all variants's values must be initialized during construction."
+			 all variants' values must be initialized during construction."
         ));
 
         let docs_get = docs_tokens(format!(
@@ -196,13 +231,28 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
             impl #gen_params #table_ty {
                 #[allow(clippy::too_many_arguments)]
                 #docs_new
-                pub const fn new( #(#fields: #gen_t),* ) -> Self {
-                    Self { #(#fields),* }
+                pub const fn new(
+                    #(
+                        #var_cfgs
+                        #fields: #gen_t
+                    ),*
+                ) -> Self {
+                    Self {
+                        #(
+                            #var_cfgs
+                            #fields
+                        ),*
+                    }
                 }
 
                 #[doc = "Constructs a new instance of the type, populating every variant's value with the parameter `__val`"]
                 pub fn filled_with(__val: #gen_t) -> Self where #gen_t: Clone {
-                    Self { #(#fields: __val.clone()),* }
+                    Self {
+                        #(
+                            #var_cfgs
+                            #fields: __val.clone()
+                        ),*
+                    }
                 }
 
                 #docs_get
@@ -225,36 +275,45 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
 
                 #[allow(clippy::needless_lifetimes)]
                 #docs_iter
-                pub fn iter<#lf>(&#lf self) -> core::array::IntoIter<#enum_ref_ty, #length> {
+                pub fn iter<#lf>(&#lf self) -> core::array::IntoIter<#enum_ref_ty, #len_ident> {
                     [
-                        #(#enum_ref_ty::#var_idents(&self.#fields)),*
+                        #(
+                            #var_cfgs
+                            #enum_ref_ty::#var_idents(&self.#fields)
+                        ),*
                     ].into_iter()
                 }
 
                 #[allow(clippy::needless_lifetimes)]
                 #docs_iter_mut
-                pub fn iter_mut<#lf>(&#lf mut self) -> core::array::IntoIter<#enum_mut_ty, #length> {
+                pub fn iter_mut<#lf>(&#lf mut self) -> core::array::IntoIter<#enum_mut_ty, #len_ident> {
                     [
-                        #(#enum_mut_ty::#var_idents(&mut self.#fields)),*
+                        #(
+                            #var_cfgs
+                            #enum_mut_ty::#var_idents(&mut self.#fields)
+                        ),*
                     ].into_iter()
                 }
             }
 
             impl #gen_params IntoIterator for #table_ty {
                 type Item = #enum_own_ty;
-                type IntoIter = core::array::IntoIter<Self::Item, #length>;
+                type IntoIter = core::array::IntoIter<Self::Item, #len_ident>;
 
                 #docs_into_iter
                 fn into_iter(self) -> Self::IntoIter {
                     [
-                        #(#enum_own_ty::#var_idents(self.#fields)),*
+                        #(
+                            #var_cfgs
+                            #enum_own_ty::#var_idents(self.#fields)
+                        ),*
                     ].into_iter()
                 }
             }
 
             impl #gen_lf_params IntoIterator for &#lf #table_ty {
                 type Item = #enum_ref_ty;
-                type IntoIter = core::array::IntoIter<Self::Item, #length>;
+                type IntoIter = core::array::IntoIter<Self::Item, #len_ident>;
 
                 #[doc = "See [`iter`](Self::iter)"]
                 fn into_iter(self) -> Self::IntoIter { self.iter() }
@@ -262,7 +321,7 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
 
             impl #gen_lf_params IntoIterator for &#lf mut #table_ty {
                 type Item = #enum_mut_ty;
-                type IntoIter = core::array::IntoIter<Self::Item, #length>;
+                type IntoIter = core::array::IntoIter<Self::Item, #len_ident>;
 
                 #[doc = "See [`iter_mut`](Self::iter_mut)"]
                 fn into_iter(self) -> Self::IntoIter { self.iter_mut() }
@@ -277,6 +336,7 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
         mod #mod_ident {
             use super::*;
 
+            #len_def
             #key_trait_def
             #table_def
             #enum_ref_def
@@ -294,6 +354,7 @@ struct SaneEnum {
 }
 
 struct SaneVariant {
+    cfg_attrs: Any<Attribute<CfgMeta>>,
     ident: Ident,
     table_field_ident: Ident,
     ty: Type,
@@ -317,42 +378,52 @@ fn sanitize_enum(input: Enum<SynMeta, SynMeta>) -> Result<SaneEnum> {
         .into_inner()
         .inner
         .into_iter()
-        .map(|Var { ident, fields, .. }| {
-            const HELP: &str =
-                "A variant table can only be generated if all variants have exactly one field.";
+        .map(
+            |Var {
+                 attrs,
+                 ident,
+                 fields,
+                 discriminant: _,
+             }| {
+                const HELP: &str =
+                    "A variant table can only be generated if all variants have exactly one field.";
 
-            let generics = generics_needed_by_variant(&fields, &sane_enum_generics);
+                let generics = generics_needed_by_variant(&fields, &sane_enum_generics);
+                let cfg_attrs = parse_cfg_attrs(attrs);
 
-            match fields {
-                VarFields::Named(named) => {
-                    if named.len() == 1 {
-                        let ty = named.into_inner().inner.into_iter().next().unwrap().ty;
-                        Ok(SaneVariant {
-                            table_field_ident: var_to_field_ident(&ident),
-                            ident,
-                            ty,
-                            generics,
-                        })
-                    } else {
-                        bail!(named => HELP)
+                match fields {
+                    VarFields::Named(named) => {
+                        if named.len() == 1 {
+                            let ty = named.into_inner().inner.into_iter().next().unwrap().ty;
+                            Ok(SaneVariant {
+                                cfg_attrs,
+                                table_field_ident: var_to_field_ident(&ident),
+                                ident,
+                                ty,
+                                generics,
+                            })
+                        } else {
+                            bail!(named => HELP)
+                        }
                     }
-                }
-                VarFields::Unnamed(unnamed) => {
-                    if unnamed.len() == 1 {
-                        let ty = unnamed.into_inner().inner.into_iter().next().unwrap().ty;
-                        Ok(SaneVariant {
-                            table_field_ident: var_to_field_ident(&ident),
-                            ident,
-                            ty,
-                            generics,
-                        })
-                    } else {
-                        bail!(unnamed => HELP)
+                    VarFields::Unnamed(unnamed) => {
+                        if unnamed.len() == 1 {
+                            let ty = unnamed.into_inner().inner.into_iter().next().unwrap().ty;
+                            Ok(SaneVariant {
+                                cfg_attrs,
+                                table_field_ident: var_to_field_ident(&ident),
+                                ident,
+                                ty,
+                                generics,
+                            })
+                        } else {
+                            bail!(unnamed => HELP)
+                        }
                     }
+                    VarFields::Unit => bail!(fields => HELP),
                 }
-                VarFields::Unit => bail!(fields => HELP),
-            }
-        })
+            },
+        )
         .try_collect()?;
 
     Ok(SaneEnum { ident, variants })

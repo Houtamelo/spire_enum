@@ -17,11 +17,31 @@ pub fn generate_variant_try_from_enum(
     settings: &Settings,
 ) -> Result<TokenStream> {
     let SaneEnum {
+        attrs: _,
+        vis: _,
+        enum_token: _,
         ident: enum_ident,
         generics: enum_generics,
+        _brace,
+        variants: _,
         ty: enum_ty,
-        ..
     } = enum_def;
+
+    let SaneVar {
+        attrs:
+            SaneVariantAttributes {
+                syn_attrs: _,
+                cfg_attrs: var_cfg_attrs,
+                no_var_type: _,
+                no_convert: _,
+                delegate_via: _,
+            },
+        ident: var_ident,
+        fields: var_fields,
+        discriminant: _,
+        generics: var_generics,
+        explicit_delegator: _,
+    } = variant;
 
     let lf = Lifetime::new("'_r1", Span::call_site());
     let where_clause = enum_generics.as_pair().1;
@@ -38,10 +58,13 @@ pub fn generate_variant_try_from_enum(
 
         let (lb, rb) = match &enum_generics {
             _Some(SaneGenerics {
-                input: InputGenerics {
-                    lb_token, rb_token, ..
-                },
-                ..
+                input:
+                    InputGenerics {
+                        lb_token,
+                        params: _,
+                        rb_token,
+                    },
+                where_clause: _,
             }) => (lb_token, rb_token),
             _None => (&Default::default(), &Default::default()),
         };
@@ -55,14 +78,13 @@ pub fn generate_variant_try_from_enum(
         (gen_params, gen_lf_params)
     };
 
-    let var_ident = &variant.ident;
     let fn_input = Ident::new("_value", Span::call_site());
 
     let will_type_be_generated = settings.extract_variants.is_some() && variant.allow_extract();
 
     let (var_ty, if_var_from_enum) = if will_type_be_generated {
         let var_ty = {
-            let args = variant.generics.stream_args();
+            let args = var_generics.stream_args();
             quote! { #var_ident #args }
         };
 
@@ -74,16 +96,17 @@ pub fn generate_variant_try_from_enum(
 
         (var_ty, if_var_from_enum)
     } else {
-        match &variant.fields {
+        match var_fields {
             SaneVarFields::Named(named) => {
                 if named.fields.len() != 1 {
                     bail!(named => HELP_CONVERT_1, var_ident => HELP_CONVERT_2);
                 }
 
                 let VarFieldNamed {
+                    attrs: _,
                     ident: field_ident,
+                    colon_token: _,
                     ty: var_ty,
-                    ..
                 } = &named.fields[0];
 
                 let if_var_from_enum = quote! {
@@ -99,7 +122,10 @@ pub fn generate_variant_try_from_enum(
                     bail!(unnamed => HELP_CONVERT_1, var_ident => HELP_CONVERT_2);
                 }
 
-                let VarFieldUnnamed { ty: var_ty, .. } = &unnamed.fields[0];
+                let VarFieldUnnamed {
+                    attrs: _,
+                    ty: field_ty,
+                } = &unnamed.fields[0];
 
                 let if_var_from_enum = quote! {
                     if let #enum_ident::#var_ident(__var) = #fn_input {
@@ -107,15 +133,16 @@ pub fn generate_variant_try_from_enum(
                     }
                 };
 
-                (quote! { #var_ty }, if_var_from_enum)
+                (quote! { #field_ty }, if_var_from_enum)
             }
             SaneVarFields::Unit => {
-                bail!(variant.fields => HELP_CONVERT_1, var_ident => HELP_CONVERT_2)
+                bail!(var_fields => HELP_CONVERT_1, var_ident => HELP_CONVERT_2)
             }
         }
     };
 
     Ok(quote! {
+        #var_cfg_attrs
         impl #gen_params ::std::convert::TryFrom<#enum_ty> for #var_ty #where_clause {
             type Error = #enum_ty;
 
@@ -125,6 +152,7 @@ pub fn generate_variant_try_from_enum(
             }
         }
 
+        #var_cfg_attrs
         impl #gen_lf_params ::std::convert::TryFrom<&#lf #enum_ty> for &#lf #var_ty #where_clause {
             type Error = ();
 
@@ -134,6 +162,7 @@ pub fn generate_variant_try_from_enum(
             }
         }
 
+        #var_cfg_attrs
         impl #gen_lf_params ::std::convert::TryFrom<&#lf mut #enum_ty> for &#lf mut #var_ty #where_clause {
             type Error = ();
 
@@ -143,6 +172,7 @@ pub fn generate_variant_try_from_enum(
             }
         }
 
+        #var_cfg_attrs
         impl #gen_params ::spire_enum::prelude::FromEnum<#enum_ty> for #var_ty #where_clause {
             fn from_enum(#fn_input: #enum_ty) -> ::std::result::Result<Self, #enum_ty> {
                 #if_var_from_enum
@@ -150,6 +180,7 @@ pub fn generate_variant_try_from_enum(
             }
         }
 
+        #var_cfg_attrs
         impl #gen_lf_params ::spire_enum::prelude::FromEnumRef<#enum_ty> for #var_ty #where_clause {
             fn from_enum_ref<'__ref>(#fn_input: &'__ref #enum_ty) -> ::std::option::Option<&'__ref Self> {
                 if let #enum_ident::#var_ident(__var) = #fn_input {
@@ -160,6 +191,7 @@ pub fn generate_variant_try_from_enum(
             }
         }
 
+        #var_cfg_attrs
         impl #gen_lf_params ::spire_enum::prelude::FromEnumMut<#enum_ty> for #var_ty #where_clause {
             fn from_enum_mut<'__ref>(#fn_input: &'__ref mut #enum_ty) -> ::std::option::Option<&'__ref mut Self> {
                 if let #enum_ident::#var_ident(__var) = #fn_input {
@@ -178,22 +210,40 @@ pub fn generate_enum_from_variant(
     settings: &Settings,
 ) -> Result<TokenStream> {
     let SaneEnum {
+        attrs: _,
+        vis: _,
+        enum_token: _,
         ident: enum_ident,
         generics: enum_generics,
+        _brace,
+        variants: _,
         ty: enum_ty,
-        ..
     } = enum_def;
+    let SaneVar {
+        attrs:
+            SaneVariantAttributes {
+                syn_attrs: _,
+                cfg_attrs: var_cfg_attrs,
+                no_var_type: _,
+                no_convert: _,
+                delegate_via: _,
+            },
+        ident: var_ident,
+        fields: var_fields,
+        discriminant: _,
+        generics: var_generics,
+        explicit_delegator: _,
+    } = variant;
 
     let (enum_generics, where_clause) = enum_generics.as_pair();
 
     let fn_input = Ident::new("_value", Span::call_site());
-    let var_ident = &variant.ident;
 
     let will_type_be_generated = settings.extract_variants.is_some() && variant.allow_extract();
 
     let (var_ty, ret_enum_from_var) = if will_type_be_generated {
         let var_ty = {
-            let args = variant.generics.stream_args();
+            let args = var_generics.stream_args();
             quote! { #var_ident #args }
         };
 
@@ -203,16 +253,17 @@ pub fn generate_enum_from_variant(
 
         (var_ty, ret_enum_from_var)
     } else {
-        match &variant.fields {
+        match var_fields {
             SaneVarFields::Named(named) => {
                 if named.fields.len() != 1 {
                     bail!(named => HELP_CONVERT_1, var_ident => HELP_CONVERT_2);
                 }
 
                 let VarFieldNamed {
+                    attrs: _,
                     ident: field_ident,
+                    colon_token: _,
                     ty: var_ty,
-                    ..
                 } = &named.fields[0];
 
                 let ret_enum_from_var = quote! {
@@ -226,7 +277,10 @@ pub fn generate_enum_from_variant(
                     bail!(unnamed => HELP_CONVERT_1, var_ident => HELP_CONVERT_2);
                 }
 
-                let VarFieldUnnamed { ty: var_ty, .. } = &unnamed.fields[0];
+                let VarFieldUnnamed {
+                    attrs: _,
+                    ty: var_ty,
+                } = &unnamed.fields[0];
 
                 let ret_enum_from_var = quote! {
                     #enum_ident::#var_ident(#fn_input)
@@ -235,12 +289,13 @@ pub fn generate_enum_from_variant(
                 (quote! { #var_ty }, ret_enum_from_var)
             }
             SaneVarFields::Unit => {
-                bail!(variant.fields => HELP_CONVERT_1, var_ident => HELP_CONVERT_2)
+                bail!(var_fields => HELP_CONVERT_1, var_ident => HELP_CONVERT_2)
             }
         }
     };
 
     Ok(quote! {
+        #var_cfg_attrs
         impl #enum_generics From::<#var_ty> for #enum_ty #where_clause {
             fn from(#fn_input: #var_ty) -> Self {
                 #ret_enum_from_var

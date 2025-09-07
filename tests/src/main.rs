@@ -3,6 +3,7 @@
 
 mod advanced_enum_test;
 mod basic_enum_test;
+mod conditional_compilation;
 mod delegated_enum;
 mod discriminant_generic_tables;
 mod settings_enum;

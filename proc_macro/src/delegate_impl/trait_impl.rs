@@ -377,8 +377,10 @@ fn sane_method_output(method: SaneMethod, macro_ident: &Ident) -> Result<TokenSt
 
     let invocation_args = other_inputs.iter().map(
         |SaneNonReceiverFnArg {
+             attrs: _,
              pat_ident: PatIdent { ident, .. },
-             ..
+             colon_token: _,
+             ty: _,
          }| ident,
     );
 

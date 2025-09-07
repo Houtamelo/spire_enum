@@ -1,4 +1,5 @@
 pub use attr_kw::delegator as kw_delegator;
+use syn::{MacroDelimiter, MetaList, parse_quote};
 
 use super::*;
 
@@ -106,7 +107,24 @@ fn sanitize_field_named(
         ty,
     } = field;
 
-    let (attrs, custom_metas) = split_input_attrs(attrs.into_inner());
+    let (mut syn_attrs, cfg_attrs, custom_metas) = split_input_attrs(attrs.into_inner());
+    syn_attrs.extend(cfg_attrs.into_inner().into_iter().map(|cfg_attr| {
+        let kw = cfg_attr.inner.kw;
+        let (bracket, inner) = cfg_attr.inner.into_parts();
+        let (paren, tokens) = inner.tokens.into_parts();
+
+        Attribute {
+            pound_token: cfg_attr.pound_token,
+            inner: Bracket::from((
+                bracket,
+                SynMeta::List(MetaList {
+                    path: parse_quote! { #kw },
+                    delimiter: MacroDelimiter::Paren(paren),
+                    tokens,
+                }),
+            )),
+        }
+    }));
 
     let mut delegator: Optional<kw_delegator> = _None;
 
@@ -117,7 +135,7 @@ fn sanitize_field_named(
 
     Ok((
         VarFieldNamed {
-            attrs,
+            attrs: syn_attrs,
             ident,
             colon_token,
             ty,
@@ -131,7 +149,25 @@ fn sanitize_field_unnamed(
 ) -> Result<(VarFieldUnnamed<SynMeta>, Optional<kw_delegator>)> {
     let VarFieldUnnamed { attrs, ty } = field;
 
-    let (attrs, custom_metas) = split_input_attrs(attrs.into_inner());
+    let (mut syn_attrs, cfg_attrs, custom_metas) = split_input_attrs(attrs.into_inner());
+    syn_attrs.extend(cfg_attrs.into_inner().into_iter().map(|cfg_attr| {
+        let kw = cfg_attr.inner.kw;
+        let (bracket, inner) = cfg_attr.inner.into_parts();
+        let (paren, tokens) = inner.tokens.into_parts();
+
+        Attribute {
+            pound_token: cfg_attr.pound_token,
+            inner: Bracket::from((
+                bracket,
+                SynMeta::List(MetaList {
+                    path: parse_quote! { #kw },
+                    delimiter: MacroDelimiter::Paren(paren),
+                    tokens,
+                }),
+            )),
+        }
+    }));
+
     let mut delegator: Optional<kw_delegator> = _None;
 
     for attr in custom_metas {
@@ -139,7 +175,13 @@ fn sanitize_field_unnamed(
         assign_unique_or_panic!(delegator, kw);
     }
 
-    Ok((VarFieldUnnamed { attrs, ty }, delegator))
+    Ok((
+        VarFieldUnnamed {
+            attrs: syn_attrs,
+            ty,
+        },
+        delegator,
+    ))
 }
 
 impl ToTokens for SaneVarFieldsNamed {

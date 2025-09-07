@@ -177,10 +177,10 @@ fn sanitize_extract_variants(input: SettingExtractVariants) -> Result<SaneSettin
             ExtractVariantsAttrs::InheritEnumDerives(kw) => {
                 assign_unique_or_panic!(enum_derives, kw);
             }
-            ExtractVariantsAttrs::Attrs(SettingAttrs { attrs, .. }) => {
+            ExtractVariantsAttrs::Attrs(SettingAttrs { kw: _, attrs }) => {
                 each_attrs.extend(attrs.into_inner().inner);
             }
-            ExtractVariantsAttrs::Derive(SettingDerive { kw: _kw, paths, .. }) => {
+            ExtractVariantsAttrs::Derive(SettingDerive { kw: _kw, paths }) => {
                 let derive_ident = Ident::new("derive", _kw.span);
                 let meta_list = (|| Ok(try_parse_quote! { #derive_ident #paths }))().map_err(
 					|mut err: Error| {

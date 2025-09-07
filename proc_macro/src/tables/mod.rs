@@ -20,8 +20,9 @@ fn var_to_field_ident(ident: &Ident) -> Ident {
 #[derive(Default)]
 struct SaneTableMetas {
     syn_metas: Vec<SynMeta>,
-    ty_name:   Optional<SettingTypeName>,
-    mod_name:  Optional<SettingModName>,
+    cfg_metas: Vec<CfgMeta>,
+    ty_name: Optional<SettingTypeName>,
+    mod_name: Optional<SettingModName>,
 }
 
 #[derive(Parse, ToTokens)]
@@ -50,8 +51,9 @@ fn parse_table_metas(input: TokenStream1) -> Result<SaneTableMetas> {
     let input_attrs = syn::parse::<InputPunctuated<Meta<TableMeta>, Token![,]>>(input)?;
 
     let mut sane = SaneTableMetas::default();
-    let (syn_metas, custom_attrs) = split_input_metas(input_attrs.inner);
+    let (syn_metas, cfg_metas, custom_attrs) = split_input_metas(input_attrs.inner);
     sane.syn_metas = syn_metas;
+    sane.cfg_metas = cfg_metas;
 
     for meta in custom_attrs {
         match meta {
@@ -72,4 +74,23 @@ fn parse_table_metas(input: TokenStream1) -> Result<SaneTableMetas> {
     }
 
     Ok(sane)
+}
+
+fn length_definition<'a>(
+    ident: &Ident,
+    var_cfgs: impl Iterator<Item = &'a Any<Attribute<CfgMeta>>>,
+) -> TokenStream {
+    quote! {
+        const #ident: usize = {
+            let mut count = 0;
+
+            #(
+                #var_cfgs
+                {
+                    count += 1;
+                }
+            )*
+            count
+        };
+    }
 }

@@ -118,10 +118,13 @@ impl SaneGenerics {
 
     pub fn stream_args(&self) -> TokenStream {
         let Self {
-            input: InputGenerics {
-                lb_token, rb_token, ..
-            },
-            ..
+            input:
+                InputGenerics {
+                    lb_token,
+                    params: _,
+                    rb_token,
+                },
+            where_clause: _,
         } = self;
         let args_list = self.stream_args_list();
         parse_quote!(#lb_token #args_list #rb_token)
