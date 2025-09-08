@@ -272,11 +272,13 @@ fn generate_output(sane: SaneImplInherent) -> Result<TokenStream> {
 
         let inputs = Paren::from((paren_token, all_args));
 
+        let maybe_await = asyncness.as_ref().map(|_| quote! { . await });
+
         functions_tt.extend(quote! {
             #( #attrs )*
             #vis #constness #asyncness #fn_unsafety #abi #fn_token
             #fn_ident #fn_generics #inputs #output #fn_where_clause {
-                #macro_ident ! { self.#fn_ident( #(#invocation_args),* ).into() }
+                #macro_ident ! { self.#fn_ident( #(#invocation_args),* ) #maybe_await .into() }
             }
         });
     }
