@@ -235,6 +235,7 @@ fn generate_delegate_macro(enum_def: &SaneEnum, settings: &Settings) -> Result<T
 
     Ok(quote! {
         #macro_docs
+        #[allow(unused)]
         macro_rules! #macro_ident {
             ( $_Self:expr => |$arg:ident| $($Rest: tt)* ) => {
                 match $_Self {
