@@ -351,6 +351,7 @@ pub struct OptionType {
 }
 
 // Implement custom trait for the variant types
+#[allow(unused)]
 pub trait Configurable {
     fn is_enabled(&self) -> bool;
     fn get_id(&self) -> Option<u32>;

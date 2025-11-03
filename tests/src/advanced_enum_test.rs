@@ -1,4 +1,4 @@
-use std::fmt::{self, Debug, Display};
+use std::fmt::{Debug, Display};
 
 use super::*;
 
@@ -10,6 +10,7 @@ pub enum Option<T> {
 }
 
 // Test with nested enum types
+#[allow(unused)]
 #[delegated_enum]
 pub enum Message {
     Text(String),
@@ -76,8 +77,11 @@ mod tests {
 
     #[test]
     fn test_message_delegation() {
+        #[allow(unused)]
         let text = Message::Text("Hello".to_string());
+        #[allow(unused)]
         let binary = Message::Binary(vec![1, 2, 3]);
+        #[allow(unused)]
         let status = Message::Status {
             code: 200,
             message: "OK".to_string(),
@@ -85,12 +89,10 @@ mod tests {
         let nested = Message::Nested(Box::new(Message::Text("Nested".to_string())));
 
         match nested {
-            Message::Nested(boxed) => {
-                match *boxed {
-                    Message::Text(ref s) => assert_eq!(s, "Nested"),
-                    _ => panic!("Expected Text variant inside Nested"),
-                }
-            }
+            Message::Nested(boxed) => match *boxed {
+                Message::Text(ref s) => assert_eq!(s, "Nested"),
+                _ => panic!("Expected Text variant inside Nested"),
+            },
             _ => panic!("Expected Nested variant"),
         }
     }

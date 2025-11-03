@@ -17,10 +17,12 @@ enum Stat {
 
 #[test]
 fn test() {
-    let mut table = actor_stats_table::ActorStats::new(5, 10, 7);
+    let mut table = ActorStats::new(5, 10, 7);
 
     // Ensure clone works
+    #[allow(unused)]
     let table_clone = table.clone();
+
     assert_eq!(table.get::<Strength>(), &5);
     assert_eq!(table.get::<Intelligence>(), &10);
     assert_eq!(table.get::<Constitution>(), &7);
@@ -37,6 +39,7 @@ fn test() {
 
 // Define an enum with the variant_generic_table macro
 #[variant_generic_table]
+#[allow(unused)]
 pub enum TestEnum {
     Number(i32),
     Text(String),
@@ -46,7 +49,7 @@ pub enum TestEnum {
 #[test]
 fn test_variant_generic_table_basic() {
     // Create a table with a single generic type
-    let mut table = test_enum_variant_generic_table::TestEnumVariantGenericTable::new(
+    let mut table = TestEnumVariantGenericTable::new(
         42, // Generic value for Number variant
         42, // Generic value for Text variant
         42, // Generic value for Flag variant
@@ -106,7 +109,7 @@ fn test_variant_generic_table_basic() {
 #[test]
 fn test_variant_generic_table_string() {
     // Create a table with String as the generic type
-    let mut table = test_enum_variant_generic_table::TestEnumVariantGenericTable::new(
+    let mut table = TestEnumVariantGenericTable::new(
         "number".to_string(), // Generic String for Number variant
         "text".to_string(),   // Generic String for Text variant
         "flag".to_string(),   // Generic String for Flag variant
@@ -121,11 +124,8 @@ fn test_variant_generic_table_string() {
 
     // Verify multiple string values through iteration
     for variant in table.iter() {
-        match variant {
-            test_enum_variant_generic_table::TestEnumRef::Text(t) => {
-                assert_eq!(*t, "text modified");
-            }
-            _ => {}
+        if let test_enum_variant_generic_table::TestEnumRef::Text(t) = variant {
+            assert_eq!(*t, "text modified");
         }
     }
 }
@@ -133,7 +133,7 @@ fn test_variant_generic_table_string() {
 #[test]
 fn test_variant_generic_table_filled() {
     // Test the filled constructor that creates a table with all the same value
-    let table = test_enum_variant_generic_table::TestEnumVariantGenericTable::filled_with(42);
+    let table = TestEnumVariantGenericTable::filled_with(42);
 
     // Verify all values are the same
     assert_eq!(*table.get::<i32>(), 42);
@@ -141,9 +141,7 @@ fn test_variant_generic_table_filled() {
     assert_eq!(*table.get::<bool>(), 42);
 
     // Create with string and verify
-    let table = test_enum_variant_generic_table::TestEnumVariantGenericTable::filled_with(
-        "same".to_string(),
-    );
+    let table = TestEnumVariantGenericTable::filled_with("same".to_string());
 
     assert_eq!(*table.get::<i32>(), "same");
     assert_eq!(*table.get::<String>(), "same");
@@ -151,11 +149,13 @@ fn test_variant_generic_table_filled() {
 }
 
 // Test trait implementation for generic values
+#[allow(unused)]
 pub trait Identifiable {
     fn id(&self) -> usize;
 }
 
 #[derive(Clone, Debug)]
+#[allow(unused)]
 struct IdentifiableValue {
     id: usize,
     value: String,
@@ -184,11 +184,7 @@ fn test_variant_generic_table_with_trait() {
     };
 
     // Create a table with these values
-    let table = test_enum_variant_generic_table::TestEnumVariantGenericTable::new(
-        val1.clone(),
-        val2.clone(),
-        val3.clone(),
-    );
+    let table = TestEnumVariantGenericTable::new(val1.clone(), val2.clone(), val3.clone());
 
     // Access values by original types
     let number_value: &IdentifiableValue = table.get::<i32>();
@@ -218,6 +214,7 @@ fn test_variant_generic_table_with_trait() {
 
 // Test with non-conflicting variant types using different wrapper types
 #[variant_generic_table]
+#[allow(unused)]
 pub enum GenericEnum<T, E>
 where
     T: Debug,
@@ -231,12 +228,11 @@ where
 #[test]
 fn test_generic_enum_variant_generic_table() {
     // Create a table for the generic enum with concrete types
-    let mut table =
-        generic_enum_variant_generic_table::GenericEnumVariantGenericTable::<String>::new(
-            "result".to_string(),
-            "result".to_string(),
-            "result".to_string(),
-        );
+    let mut table = GenericEnumVariantGenericTable::<String>::new(
+        "result".to_string(),
+        "result".to_string(),
+        "result".to_string(),
+    );
 
     // Access values by concrete types
     let t_value: &String = table.get::<Box<String>>();
@@ -275,18 +271,21 @@ fn test_generic_enum_variant_generic_table() {
 
 // Test with struct fields
 #[variant_generic_table]
+#[allow(unused)]
 pub enum ConfigEnum {
     Setting(SettingConfig),
     User(UserConfig),
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[allow(unused)]
 pub struct SettingConfig {
     name: String,
     value: i32,
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[allow(unused)]
 pub struct UserConfig {
     username: String,
     admin: bool,
@@ -294,17 +293,6 @@ pub struct UserConfig {
 
 #[test]
 fn test_struct_variant_generic_table() {
-    // Create structs for the variants
-    let setting = SettingConfig {
-        name: "test".to_string(),
-        value: 42,
-    };
-
-    let user = UserConfig {
-        username: "admin".to_string(),
-        admin: true,
-    };
-
     // Create a table with complex value type
     #[derive(Clone, Debug)]
     struct ConfigValue {
@@ -321,10 +309,7 @@ fn test_struct_variant_generic_table() {
         data: "user".to_string(),
     };
 
-    let table = config_enum_variant_generic_table::ConfigEnumVariantGenericTable::new(
-        setting_value.clone(),
-        user_value.clone(),
-    );
+    let table = ConfigEnumVariantGenericTable::new(setting_value.clone(), user_value.clone());
 
     // Access by original struct types
     let setting_ref: &ConfigValue = table.get::<SettingConfig>();
@@ -358,6 +343,7 @@ fn test_struct_variant_generic_table() {
 
 // Test with lifetime parameters
 #[variant_generic_table]
+#[allow(unused)]
 pub enum LifetimeEnum<'a> {
     Borrowed(&'a String),
     Static(&'static str),
@@ -369,7 +355,7 @@ fn test_lifetime_variant_generic_table() {
     let string = String::from("hello");
 
     // Create a table with references as generic value
-    let table = lifetime_enum_variant_generic_table::LifetimeEnumVariantGenericTable::new(
+    let table = LifetimeEnumVariantGenericTable::new(
         &string, // Reference value for all variants
         &string, &string,
     );
@@ -397,6 +383,7 @@ fn test_lifetime_variant_generic_table() {
 
 // Test using the macro with a real-world example similar to SettingsEnum
 #[variant_generic_table]
+#[allow(unused)]
 pub enum AppSettings {
     WindowSize(i32),
     Fullscreen(bool),
@@ -415,7 +402,7 @@ fn test_app_settings_variant_generic_table() {
     }
 
     // Create a table mapping each setting type to a SettingValue
-    let mut table = app_settings_variant_generic_table::AppSettingsVariantGenericTable::new(
+    let mut table = AppSettingsVariantGenericTable::new(
         SettingValue {
             key: "window_size".to_string(),
             value_type: "integer".to_string(),
@@ -458,10 +445,7 @@ fn test_app_settings_variant_generic_table() {
         modified: false,
     };
 
-    let filled_table =
-        app_settings_variant_generic_table::AppSettingsVariantGenericTable::filled_with(
-            default_value.clone(),
-        );
+    let filled_table = AppSettingsVariantGenericTable::filled_with(default_value.clone());
 
     // Verify all settings have the default value
     for variant in filled_table.iter() {
@@ -478,6 +462,7 @@ fn test_app_settings_variant_generic_table() {
 
 // Test with non-conflicting wrapper types for generic parameters
 #[variant_generic_table]
+#[allow(unused)]
 pub enum DataContainer {
     Integer(i32),
     Float(f64),
@@ -523,7 +508,7 @@ fn test_comprehensive_variant_generic_table() {
     };
 
     // Create a table mapping each variant type to a record
-    let mut table = data_container_variant_generic_table::DataContainerVariantGenericTable::new(
+    let mut table = DataContainerVariantGenericTable::new(
         int_record.clone(),
         float_record.clone(),
         bool_record.clone(),
@@ -589,6 +574,7 @@ fn test_comprehensive_variant_generic_table() {
 
 // Test with multiple distinct type wrappers to avoid conflicts
 #[variant_generic_table]
+#[allow(unused)]
 pub enum DistinctTypeEnum {
     BoxedInt(Box<i32>),
     RcString(std::rc::Rc<String>),
@@ -598,9 +584,7 @@ pub enum DistinctTypeEnum {
 
 #[test]
 fn test_distinct_type_enum() {
-    let table = distinct_type_enum_variant_generic_table::DistinctTypeEnumVariantGenericTable::new(
-        42, 42, 42, 42,
-    );
+    let table = DistinctTypeEnumVariantGenericTable::new(42, 42, 42, 42);
 
     // Access each type
     let boxed_int: &i32 = table.get::<Box<i32>>();
@@ -616,7 +600,7 @@ fn test_distinct_type_enum() {
     assert_eq!(*opt_float, 42);
 
     // Create table with string values
-    let table = distinct_type_enum_variant_generic_table::DistinctTypeEnumVariantGenericTable::new(
+    let table = DistinctTypeEnumVariantGenericTable::new(
         "boxed".to_string(),
         "rc".to_string(),
         "vec".to_string(),

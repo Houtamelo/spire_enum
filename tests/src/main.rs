@@ -1,6 +1,3 @@
-#![allow(unused)]
-#![allow(unused_qualifications)]
-
 mod advanced_enum_test;
 mod basic_enum_test;
 mod conditional_compilation;

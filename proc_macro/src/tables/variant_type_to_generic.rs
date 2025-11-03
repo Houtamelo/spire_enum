@@ -227,6 +227,7 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
         ));
 
         quote! {
+            #[allow(unused)]
             #[allow(clippy::too_many_arguments)]
             impl #gen_params #table_ty {
                 #[allow(clippy::too_many_arguments)]
@@ -331,8 +332,10 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
 
     Ok(quote! {
         #enum_def
+        #[allow(unused_imports)]
         pub(crate) use #mod_ident::#table_ident;
 
+        #[allow(unused_imports)]
         mod #mod_ident {
             use super::*;
 

@@ -3,23 +3,27 @@ use std::{fmt::Debug, marker::PhantomData};
 use super::*;
 
 // States for our door state machine
+#[allow(unused)]
 #[derive(Clone, Debug)]
 pub struct Open;
 
+#[allow(unused)]
 #[derive(Clone, Debug)]
 pub struct Closed;
 
+#[allow(unused)]
 #[derive(Clone, Debug)]
 pub struct Locked;
 
 // Door that uses typestate pattern
+#[allow(unused)]
 #[derive(Clone, Debug)]
 pub struct Door<State> {
     name: String,
     state: PhantomData<State>,
 }
 
-// Implementations for each state
+#[allow(unused)]
 impl Door<Open> {
     pub fn new(name: impl Into<String>) -> Self {
         Door {
@@ -41,6 +45,7 @@ impl Door<Open> {
     }
 }
 
+#[allow(unused)]
 impl Door<Closed> {
     pub fn open(self) -> Door<Open> {
         println!("Door '{}' is being opened", self.name);
@@ -63,6 +68,7 @@ impl Door<Closed> {
     }
 }
 
+#[allow(unused)]
 impl Door<Locked> {
     pub fn unlock(self) -> Door<Closed> {
         println!("Door '{}' is being unlocked", self.name);
@@ -78,6 +84,7 @@ impl Door<Locked> {
 }
 
 // Door action enum - no delegated_enum needed here
+#[allow(unused)]
 #[derive(Clone, Debug)]
 pub enum DoorAction {
     Open,
@@ -87,6 +94,7 @@ pub enum DoorAction {
 }
 
 // Implementation of DoorAction without using delegate_impl
+#[allow(unused)]
 impl DoorAction {
     pub fn apply_to_open_door(self, door: Door<Open>) -> Result<DoorState, &'static str> {
         match self {
@@ -118,6 +126,7 @@ impl DoorAction {
 
 // Door state using delegated_enum macro correctly
 #[delegated_enum]
+#[allow(unused)]
 #[derive(Clone)]
 pub enum DoorState {
     Open(Door<Open>),
@@ -126,6 +135,7 @@ pub enum DoorState {
 }
 
 // Regular implementation for DoorState (not using delegate_impl)
+#[allow(unused)]
 impl DoorState {
     pub fn apply_action(self, action: DoorAction) -> Result<DoorState, &'static str> {
         match self {
@@ -153,11 +163,13 @@ impl DoorState {
 }
 
 // Example of proper delegation pattern
+#[allow(unused)]
 #[derive(Clone)]
 pub struct DoorManager {
     state: DoorState,
 }
 
+#[allow(unused)]
 impl DoorManager {
     pub fn new(state: DoorState) -> Self {
         Self { state }
@@ -226,13 +238,13 @@ mod tests {
         ];
 
         // Expected states after each action
-        let expected_states = vec!["closed", "locked", "closed", "open", "closed"];
+        let expected_states = ["closed", "locked", "closed", "open", "closed"];
 
         // Apply actions and verify states
         for (i, action) in actions.into_iter().enumerate() {
             state = state
                 .apply_action(action)
-                .expect(&format!("Action {} should succeed", i));
+                .unwrap_or_else(|_| panic!("Action {} should succeed", i));
             assert_eq!(state.state_name(), expected_states[i]);
         }
     }

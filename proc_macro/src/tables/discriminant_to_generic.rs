@@ -157,6 +157,7 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
 
         quote! {
             #[allow(clippy::too_many_arguments)]
+            #[allow(unused)]
             impl #gen_params #table_ty {
                 #docs_new
                 pub const fn new(
@@ -303,6 +304,7 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
         };
 
         quote! {
+            #[allow(unused_macros)]
             macro_rules! #macro_ident {
                 ( | $var: ident | $( -> $ret: ty )? $closure: block ) => {{
                     #table_ident {
@@ -331,8 +333,10 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
     Ok(quote! {
         #enum_def
 
+        #[allow(unused_imports)]
         pub(crate) use #mod_ident::#table_ident;
 
+        #[allow(unused_imports)]
         mod #mod_ident {
             use super::#enum_ident;
 

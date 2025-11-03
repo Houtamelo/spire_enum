@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use super::*;
 
 // Define a basic enum with the discriminant_generic_table macro

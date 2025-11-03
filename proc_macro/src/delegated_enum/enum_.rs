@@ -250,6 +250,7 @@ fn generate_delegate_macro(enum_def: &SaneEnum, settings: &Settings) -> Result<T
             };
         }
 
+        #[allow(unused_imports)]
         pub(crate) use #macro_ident;
     })
 }
