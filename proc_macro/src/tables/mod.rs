@@ -21,8 +21,8 @@ fn var_to_field_ident(ident: &Ident) -> Ident {
 struct SaneTableMetas {
     syn_metas: Vec<SynMeta>,
     cfg_metas: Vec<CfgMeta>,
-    ty_name: Optional<SettingTypeName>,
-    mod_name: Optional<SettingModName>,
+    ty_name:   Optional<SettingTypeName>,
+    mod_name:  Optional<SettingModName>,
 }
 
 #[derive(Parse, ToTokens)]

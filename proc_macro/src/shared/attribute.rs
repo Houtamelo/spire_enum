@@ -40,18 +40,24 @@ pub fn split_input_attrs<T>(
         let (bracket_token, meta) = inner.into_parts();
 
         match meta {
-            Meta::Custom(c) => custom_metas.push(Attribute {
-                pound_token,
-                inner: Bracket::from((bracket_token, c)),
-            }),
-            Meta::Cfg(cfg) => cfg_metas.push(Attribute {
-                pound_token,
-                inner: Bracket::from((bracket_token, cfg)),
-            }),
-            Meta::Syn(s) => syn_metas.push(Attribute {
-                pound_token,
-                inner: Bracket::from((bracket_token, s)),
-            }),
+            Meta::Custom(c) => {
+                custom_metas.push(Attribute {
+                    pound_token,
+                    inner: Bracket::from((bracket_token, c)),
+                })
+            }
+            Meta::Cfg(cfg) => {
+                cfg_metas.push(Attribute {
+                    pound_token,
+                    inner: Bracket::from((bracket_token, cfg)),
+                })
+            }
+            Meta::Syn(s) => {
+                syn_metas.push(Attribute {
+                    pound_token,
+                    inner: Bracket::from((bracket_token, s)),
+                })
+            }
         }
     }
 

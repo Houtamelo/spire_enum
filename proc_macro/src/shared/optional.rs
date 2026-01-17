@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Clone, Parse, ToTokens)]
+#[derive(Copy, Clone, Parse, ToTokens)]
 pub enum Optional<T> {
     _Some(T),
     _None,
@@ -8,9 +8,7 @@ pub enum Optional<T> {
 
 #[allow(clippy::derivable_impls)]
 impl<T> Default for Optional<T> {
-    fn default() -> Self {
-        _None
-    }
+    fn default() -> Self { _None }
 }
 
 impl<T> Optional<T> {
@@ -21,9 +19,7 @@ impl<T> Optional<T> {
         }
     }
 
-    pub fn is_none(&self) -> bool {
-        !self.is_some()
-    }
+    pub fn is_none(&self) -> bool { !self.is_some() }
 
     pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Option<U> {
         match self {

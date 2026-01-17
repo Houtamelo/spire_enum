@@ -5,7 +5,7 @@ use super::*;
 #[derive(ToTokens, Clone)]
 pub struct InputGenerics {
     pub lb_token: Token![<],
-    pub params: InputPunctuated<GenericParam, Token![,]>,
+    pub params:   InputPunctuated<GenericParam, Token![,]>,
     pub rb_token: Token![>],
 }
 
@@ -19,104 +19,6 @@ pub fn new_ty_maybe_generic(ident: &Ident, generics: &Optional<SaneGenerics>) ->
     let gen_args = generics.stream_args();
     parse_quote! { #ident #gen_args }
 }
-
-/*
-#[derive(Parse, ToTokens)]
-pub enum InputGenericParam {
-    Lifetime(Box<InputGenericParamLifetime>),
-    Type(Box<InputGenericParamType>),
-    Const(Box<InputGenericParamConst>),
-}
-
-#[derive(Clone, Parse, ToTokens)]
-pub struct InputGenericParamLifetime {
-    pub attrs: Any<Attribute<SynMeta>>,
-    pub lifetime: Lifetime,
-    pub bounds: InputGenericParamLifetimeBounds,
-}
-
-#[derive(Clone, Parse, ToTokens)]
-pub enum InputGenericParamLifetimeBounds {
-    Some(Token![:], Separated<Lifetime, Token![+]>),
-    None,
-}
-
-#[derive(Clone, Parse, ToTokens)]
-pub struct InputGenericParamType {
-    pub attrs: Any<Attribute<SynMeta>>,
-    pub ident: Ident,
-    pub colon_token: Option<Token![:]>,
-    pub bounds: InputPunctuated<TypeParamBound, Token![+]>,
-    pub eq_token: Option<Token![=]>,
-    pub default: Optional<Type>,
-}
-
-#[derive(Clone, Parse, ToTokens)]
-pub struct InputGenericParamConst {
-    pub attrs: Any<Attribute<SynMeta>>,
-    pub const_token: Token![const],
-    pub ident: Ident,
-    pub colon_token: Token![:],
-    pub ty: Type,
-    pub eq_token: Option<Token![=]>,
-    pub default: Optional<Expr>,
-}
-
-impl CollectIdents for InputGenericParamType {
-    fn collect_idents(&self, map: &mut IdentMap) {
-        let Self {
-            attrs: _,
-            ident,
-            colon_token: _,
-            bounds,
-            eq_token: _,
-            default,
-        } = self;
-        map.insert_ty(ident);
-        collect!(map, bounds.inner, default);
-    }
-}
-
-impl CollectIdents for InputGenericParam {
-    fn collect_idents(&self, map: &mut IdentMap) {
-        use crate::InputGenericParam;
-        match_collect!(map, self => InputGenericParam{Lifetime, Type, Const});
-    }
-}
-
-impl CollectIdents for InputGenericParamConst {
-    fn collect_idents(&self, map: &mut IdentMap) {
-        let Self {
-            attrs: _,
-            const_token: _,
-            ident,
-            colon_token: _,
-            ty,
-            eq_token: _,
-            default: _,
-        } = self;
-        map.insert_constant(ident);
-        collect!(map, ty);
-    }
-}
-
-impl CollectIdents for InputGenericParamLifetime {
-    fn collect_idents(&self, map: &mut IdentMap) {
-        let Self {
-            attrs: _,
-            lifetime,
-            bounds,
-        } = self;
-
-        collect!(map, lifetime);
-        match bounds {
-            InputGenericParamLifetimeBounds::Some(_, list) => collect!(map, list),
-            InputGenericParamLifetimeBounds::None => {}
-        }
-    }
-}
-
-*/
 
 impl Parse for InputGenerics {
     fn parse(input: ParseStream) -> Result<Self> {
@@ -133,7 +35,7 @@ impl Parse for InputGenerics {
 
         Ok(InputGenerics {
             lb_token: _left_angle_bracket,
-            params: InputPunctuated {
+            params:   InputPunctuated {
                 inner: params.into_iter().collect(),
             },
             rb_token: _right_angle_bracket,
@@ -169,13 +71,9 @@ pub fn sanitize_generics(
 
 impl SaneGenerics {
     #[allow(unused)]
-    pub fn stream_params(&self) -> TokenStream {
-        self.input.to_token_stream()
-    }
+    pub fn stream_params(&self) -> TokenStream { self.input.to_token_stream() }
 
-    pub fn stream_params_list(&self) -> TokenStream {
-        self.input.params.to_token_stream()
-    }
+    pub fn stream_params_list(&self) -> TokenStream { self.input.params.to_token_stream() }
 
     pub fn stream_args(&self) -> TokenStream {
         let Self {
@@ -192,10 +90,12 @@ impl SaneGenerics {
     }
 
     pub fn stream_args_list(&self) -> TokenStream {
-        let args = self.input.params.inner.iter().map(|p| match p {
-            GenericParam::Lifetime(lf) => lf.lifetime.to_token_stream(),
-            GenericParam::Type(ty) => ty.ident.to_token_stream(),
-            GenericParam::Const(cn) => cn.ident.to_token_stream(),
+        let args = self.input.params.inner.iter().map(|p| {
+            match p {
+                GenericParam::Lifetime(lf) => lf.lifetime.to_token_stream(),
+                GenericParam::Type(ty) => ty.ident.to_token_stream(),
+                GenericParam::Const(cn) => cn.ident.to_token_stream(),
+            }
         });
 
         quote! { #(#args),* }

@@ -44,25 +44,25 @@ fn sanitize_input(input: InputImplInherent) -> Result<SaneImplInherent> {
     let generics = sanitize_generics(generics, where_clause)?;
 
     let sane_items = item_list
-		.into_iter()
-		.map(|item| {
-			match item {
-				InputImplItem::Fn(func) => sanitize_fn(*func),
-				InputImplItem::Type(assoc_type) => {
-					bail!(assoc_type => "Expected function.\n\
+        .into_iter()
+        .map(|item| {
+            match item {
+                InputImplItem::Fn(func) => sanitize_fn(*func),
+                InputImplItem::Type(assoc_type) => {
+                    bail!(assoc_type => "Expected function.\n\
 						Help: Associated types aren't supported in impl blocks that have the `delegate_impl` attribute.")
-				}
-				InputImplItem::Const(constant) => {
-					bail!(constant => "Expected function.\n\
+                }
+                InputImplItem::Const(constant) => {
+                    bail!(constant => "Expected function.\n\
 						Help: Declare this constant in an impl block that doesn't have the `delegate_impl` attribute.")
-				}
-				InputImplItem::Macro(mac) => {
-					bail!(mac => "Expected function.\n\
+                }
+                InputImplItem::Macro(mac) => {
+                    bail!(mac => "Expected function.\n\
 						Help: Declare this macro in an impl block that doesn't have the `delegate_impl` attribute.")
-				}
-			}
-		})
-		.try_collect()?;
+                }
+            }
+        })
+        .try_collect()?;
 
     Ok(SaneImplInherent {
         attrs,

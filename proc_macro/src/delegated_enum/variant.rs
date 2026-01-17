@@ -6,7 +6,8 @@ mod var_kw {
 }
 
 use var_kw::{
-    delegate_via as kw_delegate_via, dont_extract as kw_dont_extract,
+    delegate_via as kw_delegate_via,
+    dont_extract as kw_dont_extract,
     dont_impl_conversions as kw_dont_impl_conversions,
 };
 
@@ -148,12 +149,8 @@ pub enum ExplicitDelegator {
 }
 
 impl SaneVar {
-    pub fn allow_extract(&self) -> bool {
-        self.attrs.no_var_type.is_none()
-    }
-    pub fn allow_generate_conversions(&self) -> bool {
-        self.attrs.no_convert.is_none()
-    }
+    pub fn allow_extract(&self) -> bool { self.attrs.no_var_type.is_none() }
+    pub fn allow_generate_conversions(&self) -> bool { self.attrs.no_convert.is_none() }
 }
 
 pub(super) fn sanitize_variant(

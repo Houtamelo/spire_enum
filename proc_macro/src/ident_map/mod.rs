@@ -9,8 +9,7 @@ use std::collections::HashSet;
 
 use syn::*;
 
-#[cfg(test)]
-mod tests;
+#[cfg(test)] mod tests;
 
 #[derive(Debug, Clone, Default)]
 pub struct IdentMap {
@@ -43,21 +42,11 @@ impl IdentMap {
         }
     }
 
-    pub fn insert_ty(&mut self, id: &Ident) {
-        self.tys.insert(id.to_string());
-    }
-    pub fn insert_trait(&mut self, id: &Ident) {
-        self.traits.insert(id.to_string());
-    }
-    pub fn insert_lifetime(&mut self, id: &Ident) {
-        self.lifetimes.insert(id.to_string());
-    }
-    pub fn insert_constant(&mut self, id: &Ident) {
-        self.constants.insert(id.to_string());
-    }
-    pub fn insert_ambiguous(&mut self, id: &Ident) {
-        self.ambiguous_paths.insert(id.to_string());
-    }
+    pub fn insert_ty(&mut self, id: &Ident) { self.tys.insert(id.to_string()); }
+    pub fn insert_trait(&mut self, id: &Ident) { self.traits.insert(id.to_string()); }
+    pub fn insert_lifetime(&mut self, id: &Ident) { self.lifetimes.insert(id.to_string()); }
+    pub fn insert_constant(&mut self, id: &Ident) { self.constants.insert(id.to_string()); }
+    pub fn insert_ambiguous(&mut self, id: &Ident) { self.ambiguous_paths.insert(id.to_string()); }
 }
 
 macro_rules! match_collect {

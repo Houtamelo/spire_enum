@@ -109,17 +109,17 @@ fn sanitize_input(
         let enum_gen_args = generics.stream_args();
 
         (|| Ok(try_parse_quote!(#ident #enum_gen_args)))().map_err(|mut err: Error| {
-			let msg = Error::new(
-				ident.span(),
-				"parse_quote! failed to convert tokens into a syn::Type, we tried to merge this ident..",
-			);
-			err.combine(msg);
+            let msg = Error::new(
+                ident.span(),
+                "parse_quote! failed to convert tokens into a syn::Type, we tried to merge this ident..",
+            );
+            err.combine(msg);
 
-			let msg = Error::new(enum_gen_args.span(), "..with these generics");
-			err.combine(msg);
+            let msg = Error::new(enum_gen_args.span(), "..with these generics");
+            err.combine(msg);
 
-			err
-		})?
+            err
+        })?
     };
 
     Ok(SaneEnum {
@@ -174,27 +174,33 @@ fn generate_delegate_macro(enum_def: &SaneEnum, settings: &Settings) -> Result<T
                 _Some(ExplicitDelegator::Expr(_, expr)) => {
                     Ok(handle_delegator_closure(enum_def, var, will_variant_be_generated, expr))
                 }
-                _None => match &var.fields {
-                    SaneVarFields::Named(SaneVarFieldsNamed {
-                        fields: _,
-                        delegator: Some((_, field_ident)),
-                    }) => Ok(handle_delegator_field_named(
-                        enum_def,
-                        var,
-                        field_ident,
-                        will_variant_be_generated,
-                    )),
-                    SaneVarFields::Unnamed(SaneVarFieldsUnnamed {
-                        fields: _,
-                        delegator: Some((_, field_idx)),
-                    }) => Ok(handle_delegator_field_unnamed(
-                        enum_def,
-                        var,
-                        *field_idx,
-                        will_variant_be_generated,
-                    )),
-                    _ => handle_no_explicit_delegator(enum_def, var, will_variant_be_generated),
-                },
+                _None => {
+                    match &var.fields {
+                        SaneVarFields::Named(SaneVarFieldsNamed {
+                            fields: _,
+                            delegator: Some((_, field_ident)),
+                        }) => {
+                            Ok(handle_delegator_field_named(
+                                enum_def,
+                                var,
+                                field_ident,
+                                will_variant_be_generated,
+                            ))
+                        }
+                        SaneVarFields::Unnamed(SaneVarFieldsUnnamed {
+                            fields: _,
+                            delegator: Some((_, field_idx)),
+                        }) => {
+                            Ok(handle_delegator_field_unnamed(
+                                enum_def,
+                                var,
+                                *field_idx,
+                                will_variant_be_generated,
+                            ))
+                        }
+                        _ => handle_no_explicit_delegator(enum_def, var, will_variant_be_generated),
+                    }
+                }
             }
         })
         .try_collect::<_, Vec<_>, _>()?
