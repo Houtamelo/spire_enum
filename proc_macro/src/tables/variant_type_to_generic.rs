@@ -276,7 +276,7 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
 
                 #[allow(clippy::needless_lifetimes)]
                 #docs_iter
-                pub fn iter<#lf>(&#lf self) -> core::array::IntoIter<#enum_ref_ty, #len_ident> {
+                pub fn iter<#lf>(&#lf self) -> ::core::array::IntoIter<#enum_ref_ty, #len_ident> {
                     [
                         #(
                             #var_cfgs
@@ -287,7 +287,7 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
 
                 #[allow(clippy::needless_lifetimes)]
                 #docs_iter_mut
-                pub fn iter_mut<#lf>(&#lf mut self) -> core::array::IntoIter<#enum_mut_ty, #len_ident> {
+                pub fn iter_mut<#lf>(&#lf mut self) -> ::core::array::IntoIter<#enum_mut_ty, #len_ident> {
                     [
                         #(
                             #var_cfgs
@@ -297,9 +297,9 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
                 }
             }
 
-            impl #gen_params IntoIterator for #table_ty {
+            impl #gen_params ::core::iter::IntoIterator for #table_ty {
                 type Item = #enum_own_ty;
-                type IntoIter = core::array::IntoIter<Self::Item, #len_ident>;
+                type IntoIter = ::core::array::IntoIter<Self::Item, #len_ident>;
 
                 #docs_into_iter
                 fn into_iter(self) -> Self::IntoIter {
@@ -312,17 +312,17 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
                 }
             }
 
-            impl #gen_lf_params IntoIterator for &#lf #table_ty {
+            impl #gen_lf_params ::core::iter::IntoIterator for &#lf #table_ty {
                 type Item = #enum_ref_ty;
-                type IntoIter = core::array::IntoIter<Self::Item, #len_ident>;
+                type IntoIter = ::core::array::IntoIter<Self::Item, #len_ident>;
 
                 #[doc = "See [`iter`](Self::iter)"]
                 fn into_iter(self) -> Self::IntoIter { self.iter() }
             }
 
-            impl #gen_lf_params IntoIterator for &#lf mut #table_ty {
+            impl #gen_lf_params ::core::iter::IntoIterator for &#lf mut #table_ty {
                 type Item = #enum_mut_ty;
-                type IntoIter = core::array::IntoIter<Self::Item, #len_ident>;
+                type IntoIter = ::core::array::IntoIter<Self::Item, #len_ident>;
 
                 #[doc = "See [`iter_mut`](Self::iter_mut)"]
                 fn into_iter(self) -> Self::IntoIter { self.iter_mut() }

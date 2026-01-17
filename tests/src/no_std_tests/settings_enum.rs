@@ -10,8 +10,8 @@ pub trait Setting {
 }
 
 #[delegated_enum(extract_variants(inherit_enum_derives), impl_conversions)]
-#[variant_type_table]
 #[variant_generic_table]
+#[variant_type_table]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SettingsEnum {
     #[dont_extract]

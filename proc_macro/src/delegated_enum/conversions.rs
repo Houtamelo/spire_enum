@@ -90,7 +90,7 @@ pub fn generate_variant_try_from_enum(
 
         let if_var_from_enum = quote! {
             if let #enum_ident::#var_ident(__var) = #fn_input {
-                ::std::result::Result::Ok(__var)
+                ::core::result::Result::Ok(__var)
             }
         };
 
@@ -129,7 +129,7 @@ pub fn generate_variant_try_from_enum(
 
                 let if_var_from_enum = quote! {
                     if let #enum_ident::#var_ident(__var) = #fn_input {
-                        ::std::result::Result::Ok(__var)
+                        ::core::result::Result::Ok(__var)
                     }
                 };
 
@@ -143,61 +143,61 @@ pub fn generate_variant_try_from_enum(
 
     Ok(quote! {
         #var_cfg_attrs
-        impl #gen_params ::std::convert::TryFrom<#enum_ty> for #var_ty #where_clause {
+        impl #gen_params ::core::convert::TryFrom<#enum_ty> for #var_ty #where_clause {
             type Error = #enum_ty;
 
-            fn try_from(#fn_input: #enum_ty) -> ::std::result::Result<Self, Self::Error> {
+            fn try_from(#fn_input: #enum_ty) -> ::core::result::Result<Self, Self::Error> {
                 #if_var_from_enum
-                else { ::std::result::Result::Err(#fn_input) }
+                else { ::core::result::Result::Err(#fn_input) }
             }
         }
 
         #var_cfg_attrs
-        impl #gen_lf_params ::std::convert::TryFrom<&#lf #enum_ty> for &#lf #var_ty #where_clause {
+        impl #gen_lf_params ::core::convert::TryFrom<&#lf #enum_ty> for &#lf #var_ty #where_clause {
             type Error = ();
 
-            fn try_from(#fn_input: &#lf #enum_ty) -> ::std::result::Result<Self, Self::Error> {
+            fn try_from(#fn_input: &#lf #enum_ty) -> ::core::result::Result<Self, Self::Error> {
                 #if_var_from_enum
-                else { ::std::result::Result::Err(()) }
+                else { ::core::result::Result::Err(()) }
             }
         }
 
         #var_cfg_attrs
-        impl #gen_lf_params ::std::convert::TryFrom<&#lf mut #enum_ty> for &#lf mut #var_ty #where_clause {
+        impl #gen_lf_params ::core::convert::TryFrom<&#lf mut #enum_ty> for &#lf mut #var_ty #where_clause {
             type Error = ();
 
-            fn try_from(#fn_input: &#lf mut #enum_ty) -> ::std::result::Result<Self, Self::Error> {
+            fn try_from(#fn_input: &#lf mut #enum_ty) -> ::core::result::Result<Self, Self::Error> {
                 #if_var_from_enum
-                else { ::std::result::Result::Err(()) }
+                else { ::core::result::Result::Err(()) }
             }
         }
 
         #var_cfg_attrs
         impl #gen_params ::spire_enum::prelude::FromEnum<#enum_ty> for #var_ty #where_clause {
-            fn from_enum(#fn_input: #enum_ty) -> ::std::result::Result<Self, #enum_ty> {
+            fn from_enum(#fn_input: #enum_ty) -> ::core::result::Result<Self, #enum_ty> {
                 #if_var_from_enum
-                else { ::std::result::Result::Err(#fn_input) }
+                else { ::core::result::Result::Err(#fn_input) }
             }
         }
 
         #var_cfg_attrs
         impl #gen_lf_params ::spire_enum::prelude::FromEnumRef<#enum_ty> for #var_ty #where_clause {
-            fn from_enum_ref<'__ref>(#fn_input: &'__ref #enum_ty) -> ::std::option::Option<&'__ref Self> {
+            fn from_enum_ref<'__ref>(#fn_input: &'__ref #enum_ty) -> ::core::option::Option<&'__ref Self> {
                 if let #enum_ident::#var_ident(__var) = #fn_input {
-                    ::std::option::Option::Some(__var)
+                    ::core::option::Option::Some(__var)
                 } else {
-                    ::std::option::Option::None
+                    ::core::option::Option::None
                 }
             }
         }
 
         #var_cfg_attrs
         impl #gen_lf_params ::spire_enum::prelude::FromEnumMut<#enum_ty> for #var_ty #where_clause {
-            fn from_enum_mut<'__ref>(#fn_input: &'__ref mut #enum_ty) -> ::std::option::Option<&'__ref mut Self> {
+            fn from_enum_mut<'__ref>(#fn_input: &'__ref mut #enum_ty) -> ::core::option::Option<&'__ref mut Self> {
                 if let #enum_ident::#var_ident(__var) = #fn_input {
-                    ::std::option::Option::Some(__var)
+                    ::core::option::Option::Some(__var)
                 } else {
-                    ::std::option::Option::None
+                    ::core::option::Option::None
                 }
             }
         }
@@ -296,7 +296,7 @@ pub fn generate_enum_from_variant(
 
     Ok(quote! {
         #var_cfg_attrs
-        impl #enum_generics From::<#var_ty> for #enum_ty #where_clause {
+        impl #enum_generics ::core::convert::From::<#var_ty> for #enum_ty #where_clause {
             fn from(#fn_input: #var_ty) -> Self {
                 #ret_enum_from_var
             }

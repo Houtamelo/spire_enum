@@ -8,6 +8,7 @@ spire_enum = { path = "./../spire_enum" }
 
 [features]
 default = []
+no_std = []
 cond_comp = []
 cond_comp_beta = []
 cond_comp_advanced = []

@@ -24,7 +24,7 @@ pub enum ExplicitDiscriminants {
 
 #[test]
 fn test() {
-    let mut table = custom_table::CustomTable::new(5, 10, 3);
+    let mut table = CustomTable::new(5, 10, 3);
 
     // Ensure clone works
     let table_clone: CustomTable<i32> = table.clone();
@@ -33,7 +33,7 @@ fn test() {
     assert_eq!(table_clone[ExplicitDiscriminants::Third], 3);
 
     // Ensure debug is implemented
-    let _ = format!("{table:?}");
+    let _ = <CustomTable<i32> as Debug>::fmt;
 
     // Ensure discriminant values match
     assert_eq!(ExplicitDiscriminants::First as i32, 5);

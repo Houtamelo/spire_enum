@@ -1,56 +1,12 @@
-use std::{fmt::Debug, marker::PhantomData, rc::Rc};
+use core::{fmt::Debug, marker::PhantomData};
+use std::rc::Rc;
 
 use super::*;
-
-#[delegated_enum(extract_variants(derive(Debug, Clone, Default, PartialEq)))]
-#[variant_type_table(
-    mod_name = custom_table,
-    ty_name = SettingsTable,
-    attrs(derive(Debug, Default)),
-    derive(Clone),
-)]
-pub enum SettingsEnum {
-    MaxFps(i32),
-    DialogueTextSpeed(i32),
-    Vsync(bool),
-    MainVolume(i32),
-    MusicVolume(i32),
-    SfxVolume(i32),
-    VoiceVolume(i32),
-}
-
-#[test]
-fn test() {
-    let mut table = custom_table::SettingsTable::default();
-    *table.get_mut::<MaxFps>() = MaxFps(60);
-    *table.get_mut::<MainVolume>() = MainVolume(10);
-    *table.get_mut::<Vsync>() = Vsync(false);
-
-    assert_eq!(*table.get::<MaxFps>(), MaxFps(60));
-    assert_eq!(*table.get::<MainVolume>(), MainVolume(10));
-    assert_eq!(*table.get::<Vsync>(), Vsync(false));
-
-    // Ensure clone works
-    let table_clone = table.clone();
-    assert_eq!(*table_clone.get::<MaxFps>(), MaxFps(60));
-    assert_eq!(*table_clone.get::<MainVolume>(), MainVolume(10));
-    assert_eq!(*table_clone.get::<Vsync>(), Vsync(false));
-
-    // Ensure debug is implemented.
-    let _ = format!("{table:?}");
-
-    table.set(Vsync(true));
-    assert_eq!(*table.get::<Vsync>(), Vsync(true));
-
-    table.set_enum(SettingsEnum::MaxFps(MaxFps(25)));
-    assert_eq!(*table.get::<MaxFps>(), MaxFps(25));
-}
 
 // Test with generic parameters
 #[variant_type_table]
 pub enum GenericEnum<T, E>
-where
-    T: Debug,
+where T: Debug
 {
     Ok(Rc<T>),
     Err(Box<E>),
@@ -86,14 +42,18 @@ fn test_generic_variant_type_table() {
     assert_eq!(variants.len(), 3);
 
     // Check specific variants
-    let has_ok = variants.iter().any(|v| match v {
-        GenericEnum::Ok(val) => **val == "success",
-        _ => false,
+    let has_ok = variants.iter().any(|v| {
+        match v {
+            GenericEnum::Ok(val) => **val == "success",
+            _ => false,
+        }
     });
 
-    let has_err = variants.iter().any(|v| match v {
-        GenericEnum::Err(val) => **val == 100,
-        _ => false,
+    let has_err = variants.iter().any(|v| {
+        match v {
+            GenericEnum::Err(val) => **val == 100,
+            _ => false,
+        }
     });
 
     let has_none = variants.iter().any(|v| matches!(v, GenericEnum::None(_)));
@@ -113,7 +73,7 @@ pub enum ComplexEnum {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ConfigType {
-    pub name: String,
+    pub name:  String,
     pub value: i32,
 }
 
@@ -126,7 +86,7 @@ pub struct StatusInfo {
 #[test]
 fn test_complex_struct_variant_type_table() {
     let config = ConfigType {
-        name: "setting".to_string(),
+        name:  "setting".to_string(),
         value: 42,
     };
 
@@ -135,11 +95,7 @@ fn test_complex_struct_variant_type_table() {
         message: "OK".to_string(),
     };
 
-    let mut table = complex_enum_variant_type_table::ComplexEnumVariantTypeTable::new(
-        config.clone(),
-        status.clone(),
-        (),
-    );
+    let mut table = ComplexEnumVariantTypeTable::new(config.clone(), status.clone(), ());
 
     // Test struct access
     let config_ref: &ConfigType = table.get::<ConfigType>();
@@ -173,9 +129,11 @@ fn test_complex_struct_variant_type_table() {
     let variants: Vec<ComplexEnum> = table.into_iter().collect();
     assert_eq!(variants.len(), 3);
 
-    let has_config = variants.iter().any(|v| match v {
-        ComplexEnum::Config(cfg) => cfg == &config,
-        _ => false,
+    let has_config = variants.iter().any(|v| {
+        match v {
+            ComplexEnum::Config(cfg) => cfg == &config,
+            _ => false,
+        }
     });
 
     let modified_status = StatusInfo {
@@ -183,9 +141,11 @@ fn test_complex_struct_variant_type_table() {
         message: "Updated".to_string(),
     };
 
-    let has_status = variants.iter().any(|v| match v {
-        ComplexEnum::Status(st) => st == &modified_status,
-        _ => false,
+    let has_status = variants.iter().any(|v| {
+        match v {
+            ComplexEnum::Status(st) => st == &modified_status,
+            _ => false,
+        }
     });
 
     assert!(has_config);
@@ -205,7 +165,8 @@ fn test_lifetime_variant_type_table() {
     let value = String::from("static string");
 
     // Create the table
-    let mut table = lifetime_enum_variant_type_table::LifetimeEnumVariantTypeTable::new(
+    #[allow(unused_mut)]
+    let mut table = LifetimeEnumVariantTypeTable::new(
         "hello", // &'static str
         &value,  // &'a String
         (),      // Unit type
@@ -222,14 +183,18 @@ fn test_lifetime_variant_type_table() {
     let variants: Vec<LifetimeEnum> = table.into_iter().collect();
     assert_eq!(variants.len(), 3);
 
-    let has_static_ref = variants.iter().any(|v| match v {
-        LifetimeEnum::StaticRef(s) => *s == "hello",
-        _ => false,
+    let has_static_ref = variants.iter().any(|v| {
+        match v {
+            LifetimeEnum::StaticRef(s) => *s == "hello",
+            _ => false,
+        }
     });
 
-    let has_owned = variants.iter().any(|v| match v {
-        LifetimeEnum::Owned(s) => *s == "static string",
-        _ => false,
+    let has_owned = variants.iter().any(|v| {
+        match v {
+            LifetimeEnum::Owned(s) => *s == "static string",
+            _ => false,
+        }
     });
 
     assert!(has_static_ref);
@@ -247,11 +212,7 @@ pub enum ZeroSizedEnum {
 #[test]
 fn test_zero_sized_variant_type_table() {
     // Create the table with zero-sized types
-    let table = zero_sized_enum_variant_type_table::ZeroSizedEnumVariantTypeTable::new(
-        (),
-        PhantomData::<i32>,
-        None,
-    );
+    let table = ZeroSizedEnumVariantTypeTable::new((), PhantomData::<i32>, None);
 
     // Since these are zero-sized types, we can still verify the structure works
     let _unit_ref: &() = table.get::<()>();
@@ -290,7 +251,7 @@ where
 #[test]
 fn test_multi_generic_variant_type_table() {
     // Create a table with multiple generic types
-    let mut table = multi_generic_enum_variant_type_table::MultiGenericEnumVariantTypeTable::new(
+    let mut table = MultiGenericEnumVariantTypeTable::new(
         42.into(),                  // T type
         "error".to_string().into(), // E type
         "third".to_string(),        // String type
@@ -318,14 +279,18 @@ fn test_multi_generic_variant_type_table() {
     let variants: Vec<MultiGenericEnum<i32, String>> = table.into_iter().collect();
     assert_eq!(variants.len(), 3);
 
-    let has_first = variants.iter().any(|v| match v {
-        MultiGenericEnum::First(val) => **val == 100,
-        _ => false,
+    let has_first = variants.iter().any(|v| {
+        match v {
+            MultiGenericEnum::First(val) => **val == 100,
+            _ => false,
+        }
     });
 
-    let has_second = variants.iter().any(|v| match v {
-        MultiGenericEnum::Second(val) => **val == "error",
-        _ => false,
+    let has_second = variants.iter().any(|v| {
+        match v {
+            MultiGenericEnum::Second(val) => **val == "error",
+            _ => false,
+        }
     });
 
     assert!(has_first);
@@ -341,7 +306,7 @@ pub enum TraitEnum {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ValueType {
-    id: u32,
+    id:   u32,
     name: String,
 }
 
@@ -358,38 +323,27 @@ pub trait Configurable {
 }
 
 impl Configurable for ValueType {
-    fn is_enabled(&self) -> bool {
-        true
-    }
+    fn is_enabled(&self) -> bool { true }
 
-    fn get_id(&self) -> Option<u32> {
-        Some(self.id)
-    }
+    fn get_id(&self) -> Option<u32> { Some(self.id) }
 }
 
 impl Configurable for OptionType {
-    fn is_enabled(&self) -> bool {
-        self.enabled
-    }
+    fn is_enabled(&self) -> bool { self.enabled }
 
-    fn get_id(&self) -> Option<u32> {
-        None
-    }
+    fn get_id(&self) -> Option<u32> { None }
 }
 
 #[test]
 fn test_trait_integration() {
     let value = ValueType {
-        id: 123,
+        id:   123,
         name: "Test".to_string(),
     };
 
     let option = OptionType { enabled: true };
 
-    let mut table = trait_enum_variant_type_table::TraitEnumVariantTypeTable::new(
-        value.clone(),
-        option.clone(),
-    );
+    let mut table = TraitEnumVariantTypeTable::new(value.clone(), option.clone());
 
     // Test using trait methods on the types in the table
     let value_ref: &ValueType = table.get::<ValueType>();
@@ -412,15 +366,19 @@ fn test_trait_integration() {
     let variants: Vec<TraitEnum> = table.into_iter().collect();
     assert_eq!(variants.len(), 2);
 
-    let has_value = variants.iter().any(|v| match v {
-        TraitEnum::Value(val) => val == &value,
-        _ => false,
+    let has_value = variants.iter().any(|v| {
+        match v {
+            TraitEnum::Value(val) => val == &value,
+            _ => false,
+        }
     });
 
     let modified_option = OptionType { enabled: false };
-    let has_option = variants.iter().any(|v| match v {
-        TraitEnum::Option(opt) => opt == &modified_option,
-        _ => false,
+    let has_option = variants.iter().any(|v| {
+        match v {
+            TraitEnum::Option(opt) => opt == &modified_option,
+            _ => false,
+        }
     });
 
     assert!(has_value);
@@ -453,13 +411,8 @@ fn test_mixed_variant_type_table() {
     };
 
     // Create the table
-    let mut table = mixed_enum_variant_type_table::MixedEnumVariantTypeTable::new(
-        10,
-        3.13,
-        "hello".to_string(),
-        true,
-        complex.clone(),
-    );
+    let mut table =
+        MixedEnumVariantTypeTable::new(10, 3.13, "hello".to_string(), true, complex.clone());
 
     // Test access to different types
     assert_eq!(*table.get::<i32>(), 10);
@@ -484,9 +437,11 @@ fn test_mixed_variant_type_table() {
 
     let has_integer = variants.iter().any(|v| matches!(v, MixedEnum::Integer(20)));
     let has_float = variants.iter().any(|v| matches!(v, MixedEnum::Float(3.13)));
-    let has_text = variants.iter().any(|v| match v {
-        MixedEnum::Text(s) => s == "updated",
-        _ => false,
+    let has_text = variants.iter().any(|v| {
+        match v {
+            MixedEnum::Text(s) => s == "updated",
+            _ => false,
+        }
     });
     let has_flag = variants.iter().any(|v| matches!(v, MixedEnum::Flag(false)));
 
@@ -500,8 +455,7 @@ fn test_mixed_variant_type_table() {
 
 #[variant_type_table]
 pub enum ConfigEnum<'a, T>
-where
-    T: Debug + 'a,
+where T: Debug + 'a
 {
     Simple(i32),
     Text(String),
@@ -515,12 +469,8 @@ fn test_comprehensive_variant_type_table() {
     let boxed_value = Box::new("boxed value".to_string());
 
     // Create the table
-    let mut table = config_enum_variant_type_table::ConfigEnumVariantTypeTable::new(
-        10,
-        "text".to_string(),
-        &data,
-        boxed_value.clone(),
-    );
+    let mut table =
+        ConfigEnumVariantTypeTable::new(10, "text".to_string(), &data, boxed_value.clone());
 
     // Test access
     assert_eq!(*table.get::<i32>(), 10);

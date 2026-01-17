@@ -89,10 +89,12 @@ mod tests {
         let nested = Message::Nested(Box::new(Message::Text("Nested".to_string())));
 
         match nested {
-            Message::Nested(boxed) => match *boxed {
-                Message::Text(ref s) => assert_eq!(s, "Nested"),
-                _ => panic!("Expected Text variant inside Nested"),
-            },
+            Message::Nested(boxed) => {
+                match *boxed {
+                    Message::Text(ref s) => assert_eq!(s, "Nested"),
+                    _ => panic!("Expected Text variant inside Nested"),
+                }
+            }
             _ => panic!("Expected Nested variant"),
         }
     }

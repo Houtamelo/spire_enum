@@ -1,4 +1,4 @@
-use std::{fmt::Debug, marker::PhantomData};
+use core::{fmt::Debug, marker::PhantomData};
 
 use super::*;
 
@@ -19,68 +19,58 @@ pub struct Locked;
 #[allow(unused)]
 #[derive(Clone, Debug)]
 pub struct Door<State> {
-    name: String,
+    name:  &'static str,
     state: PhantomData<State>,
 }
 
 #[allow(unused)]
 impl Door<Open> {
-    pub fn new(name: impl Into<String>) -> Self {
+    pub fn new(name: &'static str) -> Self {
         Door {
-            name: name.into(),
+            name,
             state: PhantomData,
         }
     }
 
     pub fn close(self) -> Door<Closed> {
-        println!("Door '{}' is being closed", self.name);
         Door {
-            name: self.name,
+            name:  self.name,
             state: PhantomData,
         }
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
-    }
+    pub fn name(&self) -> &'static str { self.name }
 }
 
 #[allow(unused)]
 impl Door<Closed> {
     pub fn open(self) -> Door<Open> {
-        println!("Door '{}' is being opened", self.name);
         Door {
-            name: self.name,
+            name:  self.name,
             state: PhantomData,
         }
     }
 
     pub fn lock(self) -> Door<Locked> {
-        println!("Door '{}' is being locked", self.name);
         Door {
-            name: self.name,
+            name:  self.name,
             state: PhantomData,
         }
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
-    }
+    pub fn name(&self) -> &'static str { self.name }
 }
 
 #[allow(unused)]
 impl Door<Locked> {
     pub fn unlock(self) -> Door<Closed> {
-        println!("Door '{}' is being unlocked", self.name);
         Door {
-            name: self.name,
+            name:  self.name,
             state: PhantomData,
         }
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
-    }
+    pub fn name(&self) -> &'static str { self.name }
 }
 
 // Door action enum - no delegated_enum needed here
@@ -171,13 +161,9 @@ pub struct DoorManager {
 
 #[allow(unused)]
 impl DoorManager {
-    pub fn new(state: DoorState) -> Self {
-        Self { state }
-    }
+    pub fn new(state: DoorState) -> Self { Self { state } }
 
-    pub fn state(&self) -> &DoorState {
-        &self.state
-    }
+    pub fn state(&self) -> &DoorState { &self.state }
 
     pub fn transition(mut self, action: DoorAction) -> Result<Self, &'static str> {
         self.state = self.state.apply_action(action)?;
@@ -229,7 +215,7 @@ mod tests {
         let mut state = DoorState::Open(door);
 
         // Define a sequence of actions
-        let actions = vec![
+        let actions = [
             DoorAction::Close,
             DoorAction::Lock,
             DoorAction::Unlock,
@@ -276,7 +262,7 @@ mod tests {
         let state = DoorState::Open(door);
 
         // Test using the delegated macro directly
-        let name = delegate_door_state!(state => |door| door.name().to_string());
+        let name = delegate_door_state!(state => |door| door.name());
         assert_eq!(name, "Delegated Door");
     }
 }

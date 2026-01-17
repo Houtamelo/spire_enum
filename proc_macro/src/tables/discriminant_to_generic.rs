@@ -226,7 +226,7 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
 
                 #[allow(clippy::needless_lifetimes)]
                 #docs_iter
-                pub fn iter<#lf>(&#lf self) -> core::array::IntoIter<(#enum_ty, &#lf #gen_t), #len_ident> {
+                pub fn iter<#lf>(&#lf self) -> ::core::array::IntoIter<(#enum_ty, &#lf #gen_t), #len_ident> {
                     [
                         #(
                             #var_cfgs
@@ -237,7 +237,7 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
 
                 #[allow(clippy::needless_lifetimes)]
                 #docs_iter_mut
-                pub fn iter_mut<#lf>(&#lf mut self) -> core::array::IntoIter<(#enum_ty, &#lf mut #gen_t), #len_ident> {
+                pub fn iter_mut<#lf>(&#lf mut self) -> ::core::array::IntoIter<(#enum_ty, &#lf mut #gen_t), #len_ident> {
                     [
                         #(
                             #var_cfgs
@@ -247,9 +247,9 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
                 }
             }
 
-            impl #gen_params IntoIterator for #table_ty {
+            impl #gen_params ::core::iter::IntoIterator for #table_ty {
                 type Item = (#enum_ty, #gen_t);
-                type IntoIter = core::array::IntoIter<(#enum_ty, #gen_t), #len_ident>;
+                type IntoIter = ::core::array::IntoIter<(#enum_ty, #gen_t), #len_ident>;
 
                 #docs_into_iter
                 fn into_iter(self) -> Self::IntoIter {
@@ -262,23 +262,23 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
                 }
             }
 
-            impl #gen_lf_params IntoIterator for &#lf #table_ty {
+            impl #gen_lf_params ::core::iter::IntoIterator for &#lf #table_ty {
                 type Item = (#enum_ty, &#lf #gen_t);
-                type IntoIter = core::array::IntoIter<Self::Item, #len_ident>;
+                type IntoIter = ::core::array::IntoIter<Self::Item, #len_ident>;
 
                 #[doc = "See [`iter`](Self::iter)"]
                 fn into_iter(self) -> Self::IntoIter { self.iter() }
             }
 
-            impl #gen_lf_params IntoIterator for &#lf mut #table_ty {
+            impl #gen_lf_params ::core::iter::IntoIterator for &#lf mut #table_ty {
                 type Item = (#enum_ty, &#lf mut #gen_t);
-                type IntoIter = core::array::IntoIter<Self::Item, #len_ident>;
+                type IntoIter = ::core::array::IntoIter<Self::Item, #len_ident>;
 
                 #[doc = "See [`iter_mut`](Self::iter_mut)"]
                 fn into_iter(self) -> Self::IntoIter { self.iter_mut() }
             }
 
-            impl #gen_params std::ops::Index<#enum_ty> for #table_ty {
+            impl #gen_params ::core::ops::Index<#enum_ty> for #table_ty {
                 type Output = #gen_t;
 
                 #[doc = "See [`get`](Self::get)"]
@@ -287,7 +287,7 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
                 }
             }
 
-            impl #gen_params std::ops::IndexMut<#enum_ty> for #table_ty {
+            impl #gen_params ::core::ops::IndexMut<#enum_ty> for #table_ty {
                 #[doc = "See [`get_mut`](Self::get_mut)"]
                 fn index_mut(&mut self, index: #enum_ty) -> &mut Self::Output {
                     self.get_mut(index)
@@ -338,7 +338,7 @@ pub fn run(input_stream: TokenStream1, enum_stream: TokenStream1) -> Result<Toke
 
         #[allow(unused_imports)]
         mod #mod_ident {
-            use super::#enum_ident;
+            use super::*;
 
             #len_def
             #table_def
@@ -380,7 +380,7 @@ fn sanitize_enum(input: Enum<SynMeta, SynMeta>) -> Result<SaneEnum> {
         .into_iter()
         .map(|Var { attrs, ident, fields, discriminant: _ }| {
             const HELP: &str =
-                "A discriminants table can only be generated if all variants are units (have 0 fields).";
+                "A discriminant table can only be generated if all variants are units (have zero fields).";
 
             let cfg_attrs = parse_cfg_attrs(attrs);
 

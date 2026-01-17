@@ -85,7 +85,7 @@ pub struct GraphicsConfig {
 #[cfg(feature = "cond_comp_audio")]
 #[derive(PartialEq, Debug)]
 pub struct AudioConfig {
-    pub volume: f32,
+    pub volume:   f32,
     pub channels: u8,
 }
 
@@ -228,6 +228,7 @@ mod tests {
             ConfigurableSettings::BaseSettings(config) => {
                 assert_eq!(config, "base config");
             }
+            #[allow(unreachable_patterns)]
             _ => panic!("Expected BaseSettings variant"),
         }
     }
@@ -253,7 +254,7 @@ mod tests {
     #[test]
     fn test_audio_settings_variant() {
         let audio = AudioConfig {
-            volume: 0.8,
+            volume:   0.8,
             channels: 2,
         };
         let settings = ConfigurableSettings::AudioSettings(audio);
@@ -344,6 +345,7 @@ mod table_tests {
         // Note: This test will only compile if the variant_type_table macro
         // properly handles cfg attributes
 
+        #[allow(unused)]
         let var_ty_table = ConfigurableSettingsVariantTypeTable::new(
             "base".to_string(),
             #[cfg(feature = "cond_comp_graphics")]
@@ -353,7 +355,7 @@ mod table_tests {
             },
             #[cfg(feature = "cond_comp_audio")]
             AudioConfig {
-                volume: 1.0,
+                volume:   1.0,
                 channels: 2,
             },
             #[cfg(all(feature = "cond_comp_networking", not(target_arch = "wasm32")))]
@@ -363,6 +365,7 @@ mod table_tests {
             },
         );
 
+        #[allow(unused)]
         let var_gen_table = ConfigurableSettingsVariantGenericTable::new(
             "base",
             #[cfg(feature = "cond_comp_graphics")]
@@ -373,6 +376,7 @@ mod table_tests {
             "tcp",
         );
 
+        #[allow(unused)]
         let discrim_table = ConfigurableSettingsWithDiscriminantsDiscriminantTable::new(
             50,
             #[cfg(feature = "cond_comp_graphics")]

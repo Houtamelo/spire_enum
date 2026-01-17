@@ -1,5 +1,5 @@
 use kw::{mod_name as kw_mod_name, ty_name as kw_ty_name};
-use syn::parse_quote;
+use syn::{parse_quote, token::Comma};
 
 mod kw {
     syn::custom_keyword!(ty_name);
@@ -49,7 +49,18 @@ struct SettingModName {
 
 fn parse_table_metas(input: TokenStream1) -> Result<SaneTableMetas> {
     let input_attrs = syn::parse::<InputPunctuated<Meta<TableMeta>, Token![,]>>(input)?;
+    parse_table_metas_inner(input_attrs)
+}
 
+#[allow(unused)]
+fn parse_table_metas_syn(input: TokenStream) -> Result<SaneTableMetas> {
+    let input_attrs = syn::parse2::<InputPunctuated<Meta<TableMeta>, Token![,]>>(input)?;
+    parse_table_metas_inner(input_attrs)
+}
+
+fn parse_table_metas_inner(
+    input_attrs: InputPunctuated<Meta<TableMeta>, Comma>,
+) -> Result<SaneTableMetas> {
     let mut sane = SaneTableMetas::default();
     let (syn_metas, cfg_metas, custom_attrs) = split_input_metas(input_attrs.inner);
     sane.syn_metas = syn_metas;

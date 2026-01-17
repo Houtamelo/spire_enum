@@ -1,6 +1,6 @@
 [package]
 name = "spire_enum_macros"
-version = "0.7.2"
+version = "1.0.0"
 authors = ["Houtamelo <houtamelo@pm.me>"]
 description = "Procedural macros distributed by the crate `spire_enum`."
 edition = "2024"
