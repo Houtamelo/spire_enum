@@ -1,5 +1,7 @@
 # SpireEnum
 
+Note: This is crate **IS** no_std-compatible.
+
 A self-proclaimed enum-macro suite for Rust, providing several macros that aim to make enums great again.
 *(they never stopped being great, but I needed a punchline)*
 
