@@ -5,9 +5,9 @@ mod var_kw {
     custom_keyword!(delegate_via);
 }
 
+use syn::parse2;
 use var_kw::{
-    delegate_via as kw_delegate_via,
-    dont_extract as kw_dont_extract,
+    delegate_via as kw_delegate_via, dont_extract as kw_dont_extract,
     dont_impl_conversions as kw_dont_impl_conversions,
 };
 
@@ -17,7 +17,7 @@ use super::*;
 pub enum VarMeta {
     NoVarType(kw_dont_extract),
     NoConversions(kw_dont_impl_conversions),
-    DelegateVia(kw_delegate_via, Box<Paren<ExprClosure>>),
+    DelegateVia(kw_delegate_via, Paren<TokenStream>),
 }
 
 pub(super) fn generate_variant_type_definition(
@@ -149,8 +149,12 @@ pub enum ExplicitDelegator {
 }
 
 impl SaneVar {
-    pub fn allow_extract(&self) -> bool { self.attrs.no_var_type.is_none() }
-    pub fn allow_generate_conversions(&self) -> bool { self.attrs.no_convert.is_none() }
+    pub fn allow_extract(&self) -> bool {
+        self.attrs.no_var_type.is_none()
+    }
+    pub fn allow_generate_conversions(&self) -> bool {
+        self.attrs.no_convert.is_none()
+    }
 }
 
 pub(super) fn sanitize_variant(
@@ -214,11 +218,16 @@ fn sanitize_attributes(attrs: Any<Attribute<Meta<VarMeta>>>) -> Result<SaneVaria
         match attr.inner.into_inner() {
             VarMeta::NoVarType(kw) => assign_unique_or_panic!(sane.no_var_type, kw),
             VarMeta::NoConversions(kw) => assign_unique_or_panic!(sane.no_convert, kw),
-            VarMeta::DelegateVia(kw, expr) => {
+            VarMeta::DelegateVia(kw, expr_paren_tt) => {
                 if let _Some((first_kw, _)) = sane.delegate_via {
                     err_expected_only_one!(first_kw, kw);
                 } else {
-                    sane.delegate_via = _Some((kw, expr));
+                    let (paren, expr_tt) = expr_paren_tt.into_parts();
+                    let expr_closure = parse2(expr_tt)?;
+
+                    let expr_paren = Paren::from((paren, expr_closure));
+
+                    sane.delegate_via = _Some((kw, Box::new(expr_paren)));
                 }
             }
         }

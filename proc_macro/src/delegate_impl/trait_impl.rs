@@ -117,20 +117,18 @@ fn sanitize_assoc_const(input: InputImplItemConst) -> Result<SaneAssocConst> {
     } = input;
 
     match body {
-        InputImplItemConstBody::Some(eq_token, value) => {
-            Ok(SaneAssocConst {
-                attrs,
-                vis,
-                const_token,
-                ident,
-                generics,
-                colon_token,
-                ty,
-                eq_token,
-                value,
-                semi_token,
-            })
-        }
+        InputImplItemConstBody::Some(eq_token, value) => Ok(SaneAssocConst {
+            attrs,
+            vis,
+            const_token,
+            ident,
+            generics,
+            colon_token,
+            ty,
+            eq_token,
+            value,
+            semi_token,
+        }),
         InputImplItemConstBody::None => {
             bail!(ident => "Delegating associated constants is not possible, please provide the value.",
 				semi_token => "Help: Expected value before this semi-colon")
@@ -160,17 +158,15 @@ fn sanitize_assoc_type(input: InputImplItemAssocType) -> Result<SaneAssocType> {
     } = input;
 
     match body {
-        InputImplItemAssocTypeBody::Some(eq_token, ty) => {
-            Ok(SaneAssocType {
-                attrs,
-                type_token,
-                ident,
-                generics,
-                eq_token,
-                ty,
-                semi_token,
-            })
-        }
+        InputImplItemAssocTypeBody::Some(eq_token, ty) => Ok(SaneAssocType {
+            attrs,
+            type_token,
+            ident,
+            generics,
+            eq_token,
+            ty,
+            semi_token,
+        }),
         InputImplItemAssocTypeBody::None => {
             bail!(ident => "Delegating associated types is not possible, please provide the type.",
 				semi_token => "Help: Expected type before this semi-colon")
@@ -178,121 +174,15 @@ fn sanitize_assoc_type(input: InputImplItemAssocType) -> Result<SaneAssocType> {
     }
 }
 
-struct SaneMethod {
-    attrs: Any<Attribute<SynMeta>>,
-    vis: Visibility,
-    sig: SaneMethodSignature,
-    _semi_token: Token![;],
-}
-
 fn sanitize_fn(input: Box<InputImplItemFn>) -> Result<SaneItem> {
     match input.body {
         InputImplItemFnBody::Block(..) => Ok(SaneItem::FnWithExplicitImpl(input)),
-        InputImplItemFnBody::SemiColon(_semi_token) => {
-            Ok(SaneItem::Method(SaneMethod {
-                attrs: input.attrs,
-                vis: input.vis,
-                sig: sanitize_method_signature(input.sig)?,
-                _semi_token,
-            }))
-        }
-    }
-}
-
-struct SaneMethodSignature {
-    constness: Optional<Token![const]>,
-    asyncness: Optional<Token![async]>,
-    unsafety: Optional<Token![unsafe]>,
-    abi: Optional<syn::Abi>,
-    fn_token: Token![fn],
-    ident: Ident,
-    generics: Optional<InputGenerics>,
-    paren_token: syn::token::Paren,
-    receiver: Receiver,
-    other_inputs: Vec<SaneNonReceiverFnArg>,
-    output: syn::ReturnType,
-    where_clause: Optional<WhereClause>,
-}
-
-fn sanitize_method_signature(input: InputFnSignature) -> Result<SaneMethodSignature> {
-    let InputFnSignature {
-        constness,
-        asyncness,
-        unsafety,
-        abi,
-        fn_token,
-        ident,
-        generics,
-        inputs,
-        output,
-        where_clause,
-    } = input;
-
-    let (paren_token, inputs) = inputs.into_parts();
-    let mut inputs_iter = inputs.inner.into_iter();
-
-    let Some(FnArg::Receiver(receiver)) = inputs_iter.next() else {
-        bail!(ident => "Expected function to have a receiver.\n\
-			Help: To delegate the implementation to the variants, we need `Self`(the enum) as an argument.")
-    };
-
-    let other_inputs = inputs_iter
-        .map(|arg| {
-            match arg {
-                FnArg::Receiver(other_receiver) => {
-                    bail!(other_receiver => "Expected exactly one receiver.",
-                        receiver => "First receiver declared here"
-                    );
-                }
-                FnArg::Typed(pat_type) => sanitize_fn_arg(pat_type),
-            }
-        })
-        .try_collect()?;
-
-    Ok(SaneMethodSignature {
-        constness,
-        asyncness,
-        unsafety,
-        abi,
-        fn_token,
-        ident,
-        generics,
-        paren_token,
-        receiver,
-        other_inputs,
-        output,
-        where_clause,
-    })
-}
-
-struct SaneNonReceiverFnArg {
-    attrs: Vec<SynAttribute>,
-    pat_ident: PatIdent,
-    colon_token: Token![:],
-    ty: Box<Type>,
-}
-
-fn sanitize_fn_arg(arg: PatType) -> Result<SaneNonReceiverFnArg> {
-    let PatType {
-        attrs,
-        pat,
-        colon_token,
-        ty,
-    } = arg;
-
-    match *pat {
-        Pat::Ident(pat_ident) => {
-            Ok(SaneNonReceiverFnArg {
-                attrs,
-                pat_ident,
-                colon_token,
-                ty,
-            })
-        }
-        other => {
-            bail!(other => "Patterns in parameters aren't allowed, \
-				please use a plain identifier (e.g: `foo: Ty`).")
-        }
+        InputImplItemFnBody::SemiColon(_semi_token) => Ok(SaneItem::Method(SaneMethod {
+            attrs: input.attrs,
+            vis: input.vis,
+            sig: sanitize_method_signature(input.sig)?,
+            _semi_token,
+        })),
     }
 }
 
@@ -322,13 +212,11 @@ fn generate_output(sane: SaneImplTrait) -> Result<TokenStream> {
     let items = items
         .into_inner()
         .into_iter()
-        .map(|item| {
-            match item {
-                SaneItem::AssocType(ty) => Ok(ty.to_token_stream()),
-                SaneItem::AssocConst(cn) => Ok(cn.to_token_stream()),
-                SaneItem::FnWithExplicitImpl(explicit) => Ok(explicit.to_token_stream()),
-                SaneItem::Method(method) => sane_method_output(method, &macro_ident),
-            }
+        .map(|item| match item {
+            SaneItem::AssocType(ty) => Ok(ty.to_token_stream()),
+            SaneItem::AssocConst(cn) => Ok(cn.to_token_stream()),
+            SaneItem::FnWithExplicitImpl(explicit) => Ok(explicit.to_token_stream()),
+            SaneItem::Method(method) => sane_method_output(method, &macro_ident),
         })
         .try_collect::<_, Vec<_>, _>()?;
 
@@ -337,64 +225,6 @@ fn generate_output(sane: SaneImplTrait) -> Result<TokenStream> {
         #defaultness #impl_unsafety #impl_token #impl_generics
         #not_token #trait_path #for_token #self_ty #impl_where_clause {
             #(#items)*
-        }
-    })
-}
-
-fn sane_method_output(method: SaneMethod, macro_ident: &Ident) -> Result<TokenStream> {
-    let SaneMethod {
-        attrs,
-        vis,
-        sig,
-        _semi_token: _,
-    } = method;
-
-    let SaneMethodSignature {
-        constness,
-        asyncness,
-        unsafety: fn_unsafety,
-        abi,
-        fn_token,
-        ident: fn_ident,
-        generics: fn_generics,
-        paren_token,
-        receiver,
-        other_inputs,
-        output,
-        where_clause: fn_where_clause,
-    } = sig;
-
-    let attrs = attrs.iter();
-
-    let other_inputs_tt = other_inputs.iter().map(
-        |SaneNonReceiverFnArg {
-             attrs,
-             pat_ident,
-             colon_token,
-             ty,
-         }| quote! { #(#attrs)* #pat_ident #colon_token #ty },
-    );
-
-    let invocation_args = other_inputs.iter().map(
-        |SaneNonReceiverFnArg {
-             attrs: _,
-             pat_ident: PatIdent { ident, .. },
-             colon_token: _,
-             ty: _,
-         }| ident,
-    );
-
-    let all_args = quote! { #receiver, #(#other_inputs_tt),* };
-
-    let inputs = Paren::from((paren_token, all_args));
-
-    let maybe_await = asyncness.as_ref().map(|_| quote! { . await });
-
-    Ok(quote! {
-        #( #attrs )*
-        #vis #constness #asyncness #fn_unsafety #abi #fn_token
-        #fn_ident #fn_generics #inputs #output #fn_where_clause {
-            #macro_ident ! { self.#fn_ident( #(#invocation_args),* ) #maybe_await .into() }
         }
     })
 }

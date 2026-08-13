@@ -17,7 +17,7 @@ pub enum FeatureGatedEnum {
     },
 
     #[cfg(debug_assertions)]
-    DebugOnly,
+    DebugOnly(i64),
 
     #[cfg(not(debug_assertions))]
     ReleaseOnly(f64),
@@ -44,7 +44,7 @@ pub enum ComplexCfgEnum<T> {
     },
 
     #[cfg(target_family = "unix")]
-    UnixFamily,
+    UnixFamily(&'static str),
 }
 
 // Test delegated enum with cfg on variants for table generation
@@ -85,7 +85,7 @@ pub struct GraphicsConfig {
 #[cfg(feature = "cond_comp_audio")]
 #[derive(PartialEq, Debug)]
 pub struct AudioConfig {
-    pub volume:   f32,
+    pub volume: f32,
     pub channels: u8,
 }
 
@@ -142,8 +142,8 @@ mod tests {
     #[cfg(debug_assertions)]
     #[test]
     fn test_debug_only_variant() {
-        let value = FeatureGatedEnum::DebugOnly;
-        assert!(matches!(value, FeatureGatedEnum::DebugOnly));
+        let value = FeatureGatedEnum::DebugOnly(5);
+        assert!(matches!(value, FeatureGatedEnum::DebugOnly(5)));
     }
 
     #[cfg(not(debug_assertions))]
@@ -217,8 +217,8 @@ mod tests {
     #[cfg(target_family = "unix")]
     #[test]
     fn test_unix_family_variant() {
-        let value = ComplexCfgEnum::<i32>::UnixFamily;
-        assert!(matches!(value, ComplexCfgEnum::UnixFamily));
+        let value = ComplexCfgEnum::<i32>::UnixFamily("linux");
+        assert!(matches!(value, ComplexCfgEnum::UnixFamily("linux")));
     }
 
     #[test]
@@ -254,7 +254,7 @@ mod tests {
     #[test]
     fn test_audio_settings_variant() {
         let audio = AudioConfig {
-            volume:   0.8,
+            volume: 0.8,
             channels: 2,
         };
         let settings = ConfigurableSettings::AudioSettings(audio);
@@ -299,7 +299,7 @@ mod tests {
             FeatureGatedEnum::LinuxOnly(_) => "linux".to_string(),
 
             #[cfg(debug_assertions)]
-            FeatureGatedEnum::DebugOnly => "debug".to_string(),
+            FeatureGatedEnum::DebugOnly(_) => "debug".to_string(),
 
             _ => "other".to_string(),
         };
@@ -355,7 +355,7 @@ mod table_tests {
             },
             #[cfg(feature = "cond_comp_audio")]
             AudioConfig {
-                volume:   1.0,
+                volume: 1.0,
                 channels: 2,
             },
             #[cfg(all(feature = "cond_comp_networking", not(target_arch = "wasm32")))]

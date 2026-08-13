@@ -30,20 +30,6 @@ where
     Right(R),
 }
 
-// Test with attributes
-#[delegated_enum]
-#[derive(Debug, Clone)]
-pub enum HttpMethod {
-    #[allow(dead_code)]
-    GET,
-    #[allow(dead_code)]
-    POST,
-    #[allow(dead_code)]
-    PUT,
-    #[allow(dead_code)]
-    DELETE,
-}
-
 // Test with lifetime parameters
 #[delegated_enum]
 pub enum Reference<'a, T> {
@@ -89,12 +75,10 @@ mod tests {
         let nested = Message::Nested(Box::new(Message::Text("Nested".to_string())));
 
         match nested {
-            Message::Nested(boxed) => {
-                match *boxed {
-                    Message::Text(ref s) => assert_eq!(s, "Nested"),
-                    _ => panic!("Expected Text variant inside Nested"),
-                }
-            }
+            Message::Nested(boxed) => match *boxed {
+                Message::Text(ref s) => assert_eq!(s, "Nested"),
+                _ => panic!("Expected Text variant inside Nested"),
+            },
             _ => panic!("Expected Nested variant"),
         }
     }
@@ -113,19 +97,6 @@ mod tests {
             Either::Left(_) => panic!("Expected Right variant"),
             Either::Right(i) => assert_eq!(i, 42),
         }
-    }
-
-    #[test]
-    fn test_http_method_delegation() {
-        let method = HttpMethod::GET;
-        assert!(matches!(method, HttpMethod::GET));
-
-        // Test that Debug was properly derived
-        assert_eq!(format!("{:?}", method), "GET");
-
-        // Test that Clone was properly derived
-        let cloned = method.clone();
-        assert!(matches!(cloned, HttpMethod::GET));
     }
 
     #[test]

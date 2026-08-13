@@ -1,4 +1,5 @@
 use super::*;
+use syn::ReturnType;
 
 pub struct SaneEnum {
     pub attrs: Any<Attribute<SynMeta>>,
@@ -75,8 +76,8 @@ pub(super) fn run(enum_stream: TokenStream1, settings: Settings) -> Result<Token
         (false, false) => {}
     }
 
-    stream.extend(generate_enum_type(&enum_def, &settings));
-    stream.extend(generate_delegate_macro(&enum_def, &settings));
+    stream.extend(generate_enum_type(&enum_def, &settings)?);
+    stream.extend(generate_delegate_macro(&enum_def, &settings)?);
 
     Ok(stream)
 }
@@ -163,54 +164,73 @@ fn generate_enum_type(enum_def: &SaneEnum, settings: &Settings) -> Result<TokenS
 fn generate_delegate_macro(enum_def: &SaneEnum, settings: &Settings) -> Result<TokenStream> {
     let enum_ident = &enum_def.ident;
 
-    let (cases_closure, cases_tokens) = enum_def
-        .variants
-        .iter()
-        .map(|var| {
-            let will_variant_be_generated =
-                settings.extract_variants.is_some() && var.allow_extract();
+    let mut cases_closure = vec![];
+    let mut cases_tokens = vec![];
+    let mut cases_non_receiver = vec![];
 
-            match &var.explicit_delegator {
-                _Some(ExplicitDelegator::Expr(_, expr)) => {
-                    Ok(handle_delegator_closure(enum_def, var, will_variant_be_generated, expr))
-                }
-                _None => {
-                    match &var.fields {
-                        SaneVarFields::Named(SaneVarFieldsNamed {
-                            fields: _,
-                            delegator: Some((_, field_ident)),
-                        }) => {
-                            Ok(handle_delegator_field_named(
-                                enum_def,
-                                var,
-                                field_ident,
-                                will_variant_be_generated,
-                            ))
-                        }
-                        SaneVarFields::Unnamed(SaneVarFieldsUnnamed {
-                            fields: _,
-                            delegator: Some((_, field_idx)),
-                        }) => {
-                            Ok(handle_delegator_field_unnamed(
-                                enum_def,
-                                var,
-                                *field_idx,
-                                will_variant_be_generated,
-                            ))
-                        }
-                        _ => handle_no_explicit_delegator(enum_def, var, will_variant_be_generated),
-                    }
-                }
+    for var in &enum_def.variants {
+        let var_ty = if settings.extract_variants.is_some() && var.allow_extract() {
+            let var_ident = &var.ident;
+            let args = var.generics.stream_args();
+
+            let var_ty: Type = {
+                (|| Ok(try_parse_quote!(#var_ident #args)))().map_err(|mut err: Error| {
+                    let msg = Error::new(
+                        var_ident.span(),
+                        "parse_quote! failed to create a syn::Type, we tried to merge this ident..",
+                    );
+                    err.combine(msg);
+
+                    let msg = Error::new(args.span(), "..with these generics");
+                    err.combine(msg);
+
+                    err
+                })?
+            };
+
+            Some(var_ty)
+        } else {
+            None
+        };
+
+        let (case_closure, case_tokens, case_non_receiver) = match &var.explicit_delegator {
+            _Some(ExplicitDelegator::Expr(_, expr)) => {
+                handle_delegator_closure(enum_def, var, var_ty.as_ref(), expr)?
             }
-        })
-        .try_collect::<_, Vec<_>, _>()?
-        .into_iter()
-        .unzip::<_, _, Vec<_>, Vec<_>>();
+            _None => match &var.fields {
+                SaneVarFields::Named(SaneVarFieldsNamed {
+                    fields: _,
+                    delegator: Some((_, field_ident, field_ty)),
+                }) => handle_delegator_field_named(
+                    enum_def,
+                    var,
+                    field_ident,
+                    field_ty,
+                    var_ty.is_some(),
+                ),
+                SaneVarFields::Unnamed(SaneVarFieldsUnnamed {
+                    fields: _,
+                    delegator: Some((_, field_idx, field_ty)),
+                }) => handle_delegator_field_unnamed(
+                    enum_def,
+                    var,
+                    *field_idx,
+                    field_ty,
+                    var_ty.is_some(),
+                ),
+                _ => handle_no_explicit_delegator(enum_def, var, var_ty.as_ref())?,
+            },
+        };
+
+        cases_closure.push(case_closure);
+        cases_tokens.push(case_tokens);
+        cases_non_receiver.push(case_non_receiver);
+    }
 
     let macro_ident = delegate_macro_ident(enum_ident);
 
     let macro_docs = docs_tokens(format!(
-		"\n\
+        "\n\
 		This macro was generated by an invocation of [`delegated_enum`](spire_enum_macros::delegated_enum).\n\
 		\n\
 		Performs delegation of the enum by applying the same expression to all variants of the enum.\n\
@@ -237,12 +257,18 @@ fn generate_delegate_macro(enum_def: &SaneEnum, settings: &Settings) -> Result<T
         }}\n\
 		```\n\
 		"
-	));
+    ));
 
     Ok(quote! {
         #macro_docs
         #[allow(unused)]
         macro_rules! #macro_ident {
+            (@NON_RECEIVER { $($NonReceiverFn:tt)* } { $_Self: expr => |$arg: ident| } { $($Args: expr),* $(,)? } $($Rest: tt)*) => {
+                match $_Self {
+                    #(#cases_non_receiver)*
+                }
+            };
+
             ( $_Self:expr => |$arg:ident| $($Rest: tt)* ) => {
                 match $_Self {
                     #(#cases_closure)*
@@ -264,18 +290,55 @@ fn generate_delegate_macro(enum_def: &SaneEnum, settings: &Settings) -> Result<T
 fn handle_delegator_closure(
     enum_def: &SaneEnum,
     variant: &SaneVar,
-    will_variant_be_generated: bool,
+    var_ty: Option<&Type>,
     expr: &Paren<ExprClosure>,
-) -> (TokenStream, TokenStream) {
+) -> Result<(TokenStream, TokenStream, TokenStream)> {
     let enum_ident = &enum_def.ident;
     let var_ident = &variant.ident;
     let var_cfgs = &variant.attrs.cfg_attrs;
+    let delegator_ty = match &expr.output {
+        ReturnType::Default => {
+            bail!(expr.output => "Delegator closure must specify a explicit return type");
+        }
+        ReturnType::Type(_, ty) => &**ty,
+    };
 
-    if will_variant_be_generated {
+    // We omit the return type when actually using the closure to let the compiler infer cases where the field is being used by & or &mut.
+    let expr_without_ret = {
+        let (_, expr_tt) = expr.as_parts();
+        let ExprClosure {
+            attrs,
+            lifetimes,
+            constness,
+            movability,
+            asyncness,
+            capture,
+            or1_token,
+            inputs,
+            or2_token,
+            output: _,
+            body,
+        } = expr_tt;
+
+        quote! {
+            #(#attrs)*
+            #lifetimes
+            #constness
+            #movability
+            #asyncness
+            #capture
+            #or1_token
+            #inputs
+            #or2_token
+            #body
+        }
+    };
+
+    if var_ty.is_some() {
         let closure = quote! {
             #var_cfgs
             #enum_ident::#var_ident(__var) => {
-                let __f = #expr;
+                let __f = #expr_without_ret;
                 let $arg = __f(__var);
                 $($Rest)*
             }
@@ -284,13 +347,22 @@ fn handle_delegator_closure(
         let tokens = quote! {
             #var_cfgs
             #enum_ident::#var_ident(__var) => {
-                let __f = #expr;
+                let __f = #expr_without_ret;
                 let __res = __f(__var);
                 __res $($Rest)*
             }
         };
 
-        (closure, tokens)
+        let non_receiver = quote! {
+            #var_cfgs
+            #enum_ident::#var_ident(__var) => {
+                let __f = #expr_without_ret;
+                let $arg = __f(__var);
+                <#delegator_ty>::$($NonReceiverFn)*($($Args),*) $($Rest)*
+            }
+        };
+
+        Ok((closure, tokens, non_receiver))
     } else {
         match &variant.fields {
             SaneVarFields::Named(SaneVarFieldsNamed {
@@ -306,7 +378,7 @@ fn handle_delegator_closure(
                 let closure = quote! {
                     #var_cfgs
                     #enum_ident::#var_ident { #(#field_idents),* , .. } => {
-                        let __f = #expr;
+                        let __f = #expr_without_ret;
                         let $arg = __f(#(#field_idents),*);
                         $($Rest)*
                     }
@@ -315,13 +387,22 @@ fn handle_delegator_closure(
                 let tokens = quote! {
                     #var_cfgs
                     #enum_ident::#var_ident { #(#field_idents),* , .. } => {
-                        let __f = #expr;
+                        let __f = #expr_without_ret;
                         let __res = __f(#(#field_idents),*);
                         __res $($Rest)*
                     }
                 };
 
-                (closure, tokens)
+                let non_receiver = quote! {
+                    #var_cfgs
+                    #enum_ident::#var_ident { #(#field_idents),* , .. } => {
+                        let __f = #expr_without_ret;
+                        let $arg = __f(#(#field_idents),*);
+                        <#delegator_ty>::$($NonReceiverFn)*($($Args),*) $($Rest)*
+                    }
+                };
+
+                Ok((closure, tokens, non_receiver))
             }
             SaneVarFields::Unnamed(SaneVarFieldsUnnamed {
                 fields,
@@ -337,7 +418,7 @@ fn handle_delegator_closure(
                 let closure = quote! {
                     #var_cfgs
                     #enum_ident::#var_ident(#(#field_idents),* , ..) => {
-                        let __f = #expr;
+                        let __f = #expr_without_ret;
                         let $arg = __f(#(#field_idents),*);
                         $($Rest)*
                     }
@@ -346,19 +427,28 @@ fn handle_delegator_closure(
                 let tokens = quote! {
                     #var_cfgs
                     #enum_ident::#var_ident(#(#field_idents),* , ..) => {
-                        let __f = #expr;
+                        let __f = #expr_without_ret;
                         let __res = __f(#(#field_idents),*);
                         __res $($Rest)*
                     }
                 };
 
-                (closure, tokens)
+                let non_receiver = quote! {
+                    #var_cfgs
+                    #enum_ident::#var_ident(#(#field_idents),* , ..) => {
+                        let __f = #expr_without_ret;
+                        let $arg = __f(#(#field_idents),*);
+                        <#delegator_ty>::$($NonReceiverFn)*($($Args),*) $($Rest)*
+                    }
+                };
+
+                Ok((closure, tokens, non_receiver))
             }
             SaneVarFields::Unit => {
                 let closure = quote! {
                     #var_cfgs
                     #enum_ident::#var_ident => {
-                        let __f = #expr;
+                        let __f = #expr_without_ret;
                         let $arg = __f();
                         $($Rest)*
                     }
@@ -367,13 +457,22 @@ fn handle_delegator_closure(
                 let tokens = quote! {
                     #var_cfgs
                     #enum_ident::#var_ident => {
-                        let __f = #expr;
+                        let __f = #expr_without_ret;
                         let __res = __f();
                         __res $($Rest)*
                     }
                 };
 
-                (closure, tokens)
+                let non_receiver = quote! {
+                    #var_cfgs
+                    #enum_ident::#var_ident => {
+                        let __f = #expr_without_ret;
+                        let $arg = __f();
+                        <#delegator_ty>::$($NonReceiverFn)*($($Args),*) $($Rest)*
+                    }
+                };
+
+                Ok((closure, tokens, non_receiver))
             }
         }
     }
@@ -432,9 +531,9 @@ as the delegator, Unit variants will cause a compiler error.
 fn handle_no_explicit_delegator(
     enum_def: &SaneEnum,
     variant: &SaneVar,
-    will_variant_be_generated: bool,
-) -> Result<(TokenStream, TokenStream)> {
-    if will_variant_be_generated {
+    var_ty: Option<&Type>,
+) -> Result<(TokenStream, TokenStream, TokenStream)> {
+    if let Some(var_ty) = var_ty {
         let enum_ident = &enum_def.ident;
         let var_ident = &variant.ident;
         let var_cfgs = &variant.attrs.cfg_attrs;
@@ -451,31 +550,44 @@ fn handle_no_explicit_delegator(
             }
         };
 
-        Ok((closure, tokens))
+        let non_receiver_case = quote! {
+            #var_cfgs
+            #enum_ident::#var_ident($arg) => {
+                <#var_ty>::$($NonReceiverFn)*($($Args),*) $($Rest)*
+            }
+        };
+
+        Ok((closure, tokens, non_receiver_case))
     } else {
         match &variant.fields {
             SaneVarFields::Named(SaneVarFieldsNamed {
                 fields,
-                delegator: _,
+                delegator: _, // caller guarantees this is `None`.
             }) => {
                 if let Some(VarFieldNamed {
                     attrs: _,
                     ident: field_ident,
                     colon_token: _,
-                    ty: _,
+                    ty: field_ty,
                 }) = fields.first()
                 {
-                    Ok(handle_delegator_field_named(enum_def, variant, field_ident, false))
+                    Ok(handle_delegator_field_named(
+                        enum_def,
+                        variant,
+                        field_ident,
+                        field_ty,
+                        false,
+                    ))
                 } else {
                     bail!(variant.ident => HELP_MISSING_DELEGATOR)
                 }
             }
             SaneVarFields::Unnamed(SaneVarFieldsUnnamed {
                 fields,
-                delegator: _,
+                delegator: _, // caller guarantees this is `None`.
             }) => {
-                if !fields.is_empty() {
-                    Ok(handle_delegator_field_unnamed(enum_def, variant, 0, false))
+                if let Some(field) = fields.first() {
+                    Ok(handle_delegator_field_unnamed(enum_def, variant, 0, &field.ty, false))
                 } else {
                     bail!(variant.ident => HELP_MISSING_DELEGATOR)
                 }
@@ -489,8 +601,9 @@ fn handle_delegator_field_unnamed(
     enum_def: &SaneEnum,
     variant: &SaneVar,
     field_idx: usize,
+    field_ty: &Type,
     will_variant_be_generated: bool,
-) -> (TokenStream, TokenStream) {
+) -> (TokenStream, TokenStream, TokenStream) {
     let enum_ident = &enum_def.ident;
     let var_ident = &variant.ident;
     let var_cfgs = &variant.attrs.cfg_attrs;
@@ -514,6 +627,12 @@ fn handle_delegator_field_unnamed(
                 #var_cfgs
                 #enum_ident::#var_ident(#var_ident(#fields __var, ..), ..) => { __var $($Rest)* }
             },
+            quote! {
+                #var_cfgs
+                #enum_ident::#var_ident(#var_ident(#fields $arg, ..), ..) => {
+                    <#field_ty>::$($NonReceiverFn)*($($Args),*) $($Rest)*
+                }
+            },
         )
     } else {
         (
@@ -525,6 +644,12 @@ fn handle_delegator_field_unnamed(
                 #var_cfgs
                 #enum_ident::#var_ident(#fields __var, ..) => { __var $($Rest)* }
             },
+            quote! {
+                #var_cfgs
+                #enum_ident::#var_ident(#fields $arg, ..) => {
+                    <#field_ty>::$($NonReceiverFn)*($($Args),*) $($Rest)*
+                }
+            },
         )
     }
 }
@@ -533,8 +658,9 @@ fn handle_delegator_field_named(
     enum_def: &SaneEnum,
     variant: &SaneVar,
     field_ident: &Ident,
+    field_ty: &Type,
     will_variant_be_generated: bool,
-) -> (TokenStream, TokenStream) {
+) -> (TokenStream, TokenStream, TokenStream) {
     let enum_ident = &enum_def.ident;
     let var_ident = &variant.ident;
     let var_cfgs = &variant.attrs.cfg_attrs;
@@ -549,6 +675,12 @@ fn handle_delegator_field_named(
                 #var_cfgs
                 #enum_ident::#var_ident(#var_ident { #field_ident, .. }) => { #field_ident $($Rest)* }
             },
+            quote! {
+                #var_cfgs
+                #enum_ident::#var_ident(#var_ident { #field_ident: $arg, .. }) => {
+                    <#field_ty>::$($NonReceiverFn)*($($Args),*) $($Rest)*
+                }
+            },
         )
     } else {
         (
@@ -559,6 +691,12 @@ fn handle_delegator_field_named(
             quote! {
                 #var_cfgs
                 #enum_ident::#var_ident { #field_ident, .. } => { #field_ident $($Rest)* }
+            },
+            quote! {
+                #var_cfgs
+                #enum_ident::#var_ident { #field_ident: $arg, .. } => {
+                    <#field_ty>::$($NonReceiverFn)*($($Args),*) $($Rest)*
+                }
             },
         )
     }

@@ -40,24 +40,18 @@ pub fn split_input_attrs<T>(
         let (bracket_token, meta) = inner.into_parts();
 
         match meta {
-            Meta::Custom(c) => {
-                custom_metas.push(Attribute {
-                    pound_token,
-                    inner: Bracket::from((bracket_token, c)),
-                })
-            }
-            Meta::Cfg(cfg) => {
-                cfg_metas.push(Attribute {
-                    pound_token,
-                    inner: Bracket::from((bracket_token, cfg)),
-                })
-            }
-            Meta::Syn(s) => {
-                syn_metas.push(Attribute {
-                    pound_token,
-                    inner: Bracket::from((bracket_token, s)),
-                })
-            }
+            Meta::Custom(c) => custom_metas.push(Attribute {
+                pound_token,
+                inner: Bracket::from((bracket_token, c)),
+            }),
+            Meta::Cfg(cfg) => cfg_metas.push(Attribute {
+                pound_token,
+                inner: Bracket::from((bracket_token, cfg)),
+            }),
+            Meta::Syn(s) => syn_metas.push(Attribute {
+                pound_token,
+                inner: Bracket::from((bracket_token, s)),
+            }),
         }
     }
 
@@ -115,6 +109,21 @@ pub fn parse_syn_attr_as_cfg(
     }
 }
 
+pub fn extract_attr<Meta: Parse>(syn_attrs: &mut Vec<SynAttribute>) -> Option<Attribute<Meta>> {
+    let mut found_attr = None;
+
+    syn_attrs.retain_mut(|syn_attr| {
+        if let Ok(attr) = (|| -> Result<Attribute<Meta>> { Ok(try_parse_quote!(#syn_attr)) })() {
+            found_attr = Some(attr);
+            false
+        } else {
+            true
+        }
+    });
+
+    found_attr
+}
+
 #[derive(Clone, Parse, ToTokens)]
 pub struct CfgMeta {
     pub kw: kw_cfg,
@@ -122,7 +131,9 @@ pub struct CfgMeta {
 }
 
 pub use kw::cfg as kw_cfg;
+pub use kw::receiver as kw_receiver;
 
 mod kw {
     syn::custom_keyword!(cfg);
+    syn::custom_keyword!(receiver);
 }

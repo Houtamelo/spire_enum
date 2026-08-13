@@ -34,7 +34,7 @@ where
         dummy: Dummy<'a, 'b, S, T>,
         pardon_me: i32,
     },
-    #[delegate_via(|p, d| d)]
+    #[delegate_via(|p, d| -> Dummy<'a, 'b, S, T> { d })]
     DumDumTriple {
         pardon_me: i32,
         dummy: Dummy<'a, 'b, S, T>,

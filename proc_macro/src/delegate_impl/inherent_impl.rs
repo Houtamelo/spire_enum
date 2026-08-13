@@ -47,7 +47,7 @@ fn sanitize_input(input: InputImplInherent) -> Result<SaneImplInherent> {
         .into_iter()
         .map(|item| {
             match item {
-                InputImplItem::Fn(func) => sanitize_fn(*func),
+                InputImplItem::Fn(func) => sanitize_fn(func),
                 InputImplItem::Type(assoc_type) => {
                     bail!(assoc_type => "Expected function.\n\
 						Help: Associated types aren't supported in impl blocks that have the `delegate_impl` attribute.")
@@ -75,20 +75,13 @@ fn sanitize_input(input: InputImplInherent) -> Result<SaneImplInherent> {
     })
 }
 
-struct SaneMethod {
-    attrs: Any<Attribute<SynMeta>>,
-    vis: Visibility,
-    sig: SaneMethodSignature,
-    _semi_token: Token![;],
-}
-
-fn sanitize_fn(input: InputImplItemFn) -> Result<SaneMethod> {
+fn sanitize_fn(input: Box<InputImplItemFn>) -> Result<SaneMethod> {
     let InputImplItemFn {
         attrs,
         vis,
         sig,
         body,
-    } = input;
+    } = *input;
 
     let semi_token = match body {
         InputImplItemFnBody::Block(block) => {
@@ -105,103 +98,6 @@ fn sanitize_fn(input: InputImplItemFn) -> Result<SaneMethod> {
         sig: sanitize_method_signature(sig)?,
         _semi_token: semi_token,
     })
-}
-
-struct SaneMethodSignature {
-    constness: Optional<Token![const]>,
-    asyncness: Optional<Token![async]>,
-    unsafety: Optional<Token![unsafe]>,
-    abi: Optional<syn::Abi>,
-    fn_token: Token![fn],
-    ident: Ident,
-    generics: Optional<InputGenerics>,
-    paren_token: syn::token::Paren,
-    receiver: Receiver,
-    other_inputs: Vec<SaneNonReceiverFnArg>,
-    output: syn::ReturnType,
-    where_clause: Optional<WhereClause>,
-}
-
-fn sanitize_method_signature(input: InputFnSignature) -> Result<SaneMethodSignature> {
-    let InputFnSignature {
-        constness,
-        asyncness,
-        unsafety,
-        abi,
-        fn_token,
-        ident,
-        generics,
-        inputs,
-        output,
-        where_clause,
-    } = input;
-
-    let (paren_token, inputs) = inputs.into_parts();
-    let mut inputs_iter = inputs.inner.into_iter();
-
-    let Some(FnArg::Receiver(receiver)) = inputs_iter.next() else {
-        bail!(ident => "Expected function to have a receiver.\n\
-			Help: To delegate the implementation to the variants, we need `Self`(the enum) as an argument.")
-    };
-
-    let other_inputs = inputs_iter
-        .map(|arg| {
-            match arg {
-                FnArg::Receiver(other_receiver) => {
-                    bail!(other_receiver => "Expected exactly one receiver.",
-                        receiver => "First receiver declared here"
-                    );
-                }
-                FnArg::Typed(pat_type) => sanitize_fn_arg(pat_type),
-            }
-        })
-        .try_collect()?;
-
-    Ok(SaneMethodSignature {
-        constness,
-        asyncness,
-        unsafety,
-        abi,
-        fn_token,
-        ident,
-        generics,
-        paren_token,
-        receiver,
-        other_inputs,
-        output,
-        where_clause,
-    })
-}
-
-struct SaneNonReceiverFnArg {
-    attrs: Vec<SynAttribute>,
-    pat_ident: PatIdent,
-    colon_token: Token![:],
-    ty: Box<Type>,
-}
-
-fn sanitize_fn_arg(arg: PatType) -> Result<SaneNonReceiverFnArg> {
-    let PatType {
-        attrs,
-        pat,
-        colon_token,
-        ty,
-    } = arg;
-
-    match *pat {
-        Pat::Ident(pat_ident) => {
-            Ok(SaneNonReceiverFnArg {
-                attrs,
-                pat_ident,
-                colon_token,
-                ty,
-            })
-        }
-        other => {
-            bail!(other => "Patterns in parameters aren't allowed, \
-				please use a plain identifier (e.g: `foo: Ty`).")
-        }
-    }
 }
 
 fn generate_output(sane: SaneImplInherent) -> Result<TokenStream> {
@@ -224,69 +120,16 @@ fn generate_output(sane: SaneImplInherent) -> Result<TokenStream> {
         delegate_macro_ident(enum_ident)
     };
 
-    let mut functions_tt = TokenStream::new();
-
-    for SaneMethod {
-        attrs,
-        vis,
-        sig,
-        _semi_token: _,
-    } in functions.into_inner()
-    {
-        let SaneMethodSignature {
-            constness,
-            asyncness,
-            unsafety: fn_unsafety,
-            abi,
-            fn_token,
-            ident: fn_ident,
-            generics: fn_generics,
-            paren_token,
-            receiver,
-            other_inputs,
-            output,
-            where_clause: fn_where_clause,
-        } = sig;
-
-        let attrs = attrs.iter();
-
-        let other_inputs_tt = other_inputs.iter().map(
-            |SaneNonReceiverFnArg {
-                 attrs,
-                 pat_ident,
-                 colon_token,
-                 ty,
-             }| quote! { #(#attrs)* #pat_ident #colon_token #ty },
-        );
-
-        let invocation_args = other_inputs.iter().map(
-            |SaneNonReceiverFnArg {
-                 attrs: _,
-                 pat_ident: PatIdent { ident, .. },
-                 colon_token: _,
-                 ty: _,
-             }| ident,
-        );
-
-        let all_args = quote! { #receiver, #(#other_inputs_tt),* };
-
-        let inputs = Paren::from((paren_token, all_args));
-
-        let maybe_await = asyncness.as_ref().map(|_| quote! { . await });
-
-        functions_tt.extend(quote! {
-            #( #attrs )*
-            #vis #constness #asyncness #fn_unsafety #abi #fn_token
-            #fn_ident #fn_generics #inputs #output #fn_where_clause {
-                #macro_ident ! { self.#fn_ident( #(#invocation_args),* ) #maybe_await .into() }
-            }
-        });
-    }
+    let functions_tt = functions
+        .into_inner()
+        .into_iter()
+        .map(|method| sane_method_output(method, &macro_ident))
+        .try_collect::<_, Vec<_>, _>()?;
 
     Ok(quote! {
         #attrs
         #defaultness #impl_unsafety #impl_token #impl_generics #self_ty #impl_where_clause {
-            #functions_tt
+            #(#functions_tt)*
         }
     })
 }

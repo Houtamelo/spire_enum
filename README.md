@@ -2,18 +2,14 @@
 
 Note: This is crate **IS** no_std-compatible.
 
-A self-proclaimed enum-macro suite for Rust, providing several macros that aim to make enums great again.
-*(they never stopped being great, but I needed a punchline)*
+A self-proclaimed enum-macro suite for Rust, providing several macros that aim to make enums great again. *(they never stopped being great, but I needed a punchline)*
 
-- `#[delegated_enum]`: Placed on enums, generates a declarative macro that allows you to delegate impls for your enum in a single line.
-  , and/or allows extracting variant types.
+- `#[delegated_enum]`: Placed on enums, generates a declarative macro that allows you to delegate impls for your enum in a single line. , and/or allows extracting variant types.
 - `#[delegated_impl]`: Placed on impl blocks, works in conjunction with `#[delegated_enum]` to generate your enum's delegated impls.
-- `#[variant_type_table]`: Place on enums, generates a table type that holds exactly one of each of the enums's variants,
-  as well as several useful implementations for that type.
-- `#[variant_generic_table]`: Place on enums, works similarly to `#[variant_type_table]`, except each value on the table is
-  of a generic parameter instead of the variant's type.
-- `#[discriminant_generic_table]`: Place on enums, works similarly to `#[variant_generic_table]`, except this is meant for enums
-  with unit variants, accessing the values is used by indexing with the enum variant itself(instead of the variant's type).
+- `#[variant_type_table]`: Place on enums, generates a table type that holds exactly one of each of the enums's variants, as well as several useful implementations for that type.
+- `#[variant_generic_table]`: Place on enums, works similarly to `#[variant_type_table]`, except each value on the table is of a generic parameter instead of the variant's type.
+- `#[discriminant_generic_table]`: Place on enums, works similarly to `#[variant_generic_table]`, except this is meant for enums with unit variants, accessing the values is used by indexing with the
+  enum variant itself (instead of the variant's type).
 
 - For more info on the table macros, see each macro's documentation.
 - For more info on `#[delegated_enum]` and `#[delegated_impl]`, keep reading this file.
@@ -26,22 +22,23 @@ A self-proclaimed enum-macro suite for Rust, providing several macros that aim t
 - [Alternatives](#alternatives)
 - [Usage](#usage)
     - [1. `#[delegated_enum]` (Enum attribute macro)](#1-delegated_enum-enum-attribute-macro)
-        - [1.1 Basic Usage](#11-basic-usage)
-        - [1.2 Conversion Settings](#12-conversion-settings)
-            - [1.2.1 `impl_conversions`](#121-impl_conversions)
-            - [1.2.2 `impl_enum_try_into_variants`](#122-impl_enum_try_into_variants)
-            - [1.2.3 `impl_variants_into_enum`](#123-impl_variants_into_enum)
-        - [1.3 Variant Types Generation](#13-variant-types-generation)
-            - [1.3.1 `extract_variants`](#131-extract_variants)
-            - [1.3.2 `extract_variants( attrs(attribute_list) )`](#132-extract_variants-attrsattribute_list-)
-            - [1.3.3 `extract_variants( derive(trait_list) )`](#133-extract_variants-derivetrait_list-)
-            - [1.3.4 `extract_variants( inherit_enum_derives )`](#133-extract_variants-inherit_enum_derives-)
+        - [1.1. Basic Usage](#11-basic-usage)
+        - [1.2. Conversion Settings](#12-conversion-settings)
+            - [1.2.1. `impl_conversions`](#121-impl_conversions)
+            - [1.2.2. `impl_enum_try_into_variants`](#122-impl_enum_try_into_variants)
+            - [1.2.3. `impl_variants_into_enum`](#123-impl_variants_into_enum)
+        - [1.3. Variant Types Generation](#13-variant-types-generation)
+            - [1.3.1. `extract_variants`](#131-extract_variants)
+            - [1.3.2. `extract_variants( attrs(attribute_list) )`](#132-extract_variants-attrsattribute_list-)
+            - [1.3.3. `extract_variants( derive(trait_list) )`](#133-extract_variants-derivetrait_list-)
+            - [1.3.4. `extract_variants( inherit_enum_derives )`](#133-extract_variants-inherit_enum_derives-)
     - [2. `#[delegate_impl]` (Inherent/Trait impl attribute macro)](#2-delegate_impl-inherenttrait-impl-attribute-macro)
-        - [2.1 Associated Types, Constants and Static Functions](#21-associated-types-constants-and-static-functions)
+        - [2.1. Associated Types, Constants and Static Functions](#21-associated-types-constants-and-static-functions)
+        - [2.2. The `#[receiver]` attribute](#22-the-receiver-attribute)
     - [3. Variant Attributes](#3-variant-attributes)
-        - [3.1 `#[dont_impl_conversions]` / `#[dont_extract]` (Variant attributes)](#31-dont_impl_conversions--dont_extract-variant-attributes)
-        - [3.2 `#[delegate_via(|var| var.foo())]` (Variant attribute)](#32-delegate_viavar-varfoo-variant-attribute)
-        - [3.3 `#[delegator]` (Variant field attribute)](#33-delegator-variant-field-attribute)
+        - [3.1. `#[dont_impl_conversions]` / `#[dont_extract]` (Variant attributes)](#31-dont_impl_conversions--dont_extract-variant-attributes)
+        - [3.2. `#[delegate_via(|var| var.foo())]` (Variant attribute)](#32-delegate_viavar-varfoo-variant-attribute)
+        - [3.3. `#[delegator]` (Variant field attribute)](#33-delegator-variant-field-attribute)
 - [Example: Basic Usage](#example-basic-usage)
 - [Example: State Machine](#example-state-machine)
 - [Troubleshooting](#troubleshooting)
@@ -325,8 +322,7 @@ impl IState for Idle {
 
 That's the least of our worries, but it doesn't mean we can't do better.
 
-Let's have `spire_enum` generate conversions implementations too (`From<Variant>` for Enum, `TryFrom<Enum>` for Variant),
-which can be done with the setting `impl_conversions`:
+Let's have `spire_enum` generate conversions implementations too (`From<Variant>` for Enum, `TryFrom<Enum>` for Variant), which can be done with the setting `impl_conversions`:
 
 ```rust ignore
 #[delegated_enum(
@@ -386,15 +382,13 @@ Macros 1. and 2. work together by:
     - A declarative macro named `delegate_[enum_name]` that handles the delegation logic.
     - `[Optional]` A new type for each variant.
     - `[Optional]` Conversion (`From<>`, `TryFrom<>`) implementations between the enum and its variants.
-3. The `#[delegate_impl]` macro can be applied on trait or inherent implementations of the enum,
-   it uses the generated `delegate_[enum_name]` macro to implement the method bodies that need delegation.
+3. The `#[delegate_impl]` macro can be applied on trait or inherent implementations of the enum, it uses the generated `delegate_[enum_name]` macro to implement the method bodies that need delegation.
 
 ## Alternatives
 
-- [enum_delegate](https://crates.io/crates/enum_delegate) - The initial inspiration for this crate,
-  I aimed to provide better features while avoiding that crate's drawbacks (the main ones being lack of hygiene, preserving state between macro invocations).
-- [delegation](https://crates.io/crates/delegation) - A fork of `enum_delegate`, which solves some of the old one's issues - though
-  it takes a different approach compared to `spire_enum`.
+- [enum_delegate](https://crates.io/crates/enum_delegate) - The initial inspiration for this crate, I aimed to provide better features while avoiding that crate's drawbacks (the main ones being lack
+  of hygiene, preserving state between macro invocations).
+- [delegation](https://crates.io/crates/delegation) - A fork of `enum_delegate`, which solves some of the old one's issues - though it takes a different approach compared to `spire_enum`.
 - [enum_variant_type](https://crates.io/crates/enum_variant_type) - Provides similar functionality to this crate's `extract_variants` setting.
 
 ## Usage
@@ -417,7 +411,7 @@ pub enum ApiResponse<T> {
 
 The `delegated_enum` attribute supports several optional settings that control how the enum behaves:
 
-#### 1.1 Basic Usage
+#### 1.1. Basic Usage
 
 When used without any settings, `delegated_enum` generates:
 
@@ -491,17 +485,15 @@ impl OnLoad for MediaContent {
 }
 ```
 
-Although it can be used manually, the generated declarative macro `delegate_media_content` is used by the `#[delegate_impl]` attribute macro in the
-exact same way.
+Although it can be used manually, the generated declarative macro `delegate_media_content` is used by the `#[delegate_impl]` attribute macro in the exact same way.
 
-#### 1.2 Conversion Settings
+#### 1.2. Conversion Settings
 
 These are specified inside `#[delegated_enum( **here** )]`, separated by commas.
 
-##### 1.2.1 `impl_conversions`
+##### 1.2.1. `impl_conversions`
 
-Enable automatic generation of conversion methods between the enum and its variants.
-For each `Variant`:
+Enable automatic generation of conversion methods between the enum and its variants. For each `Variant`:
 
 - `TryFrom<Enum>` for `Variant`
 - `TryFrom<&Enum>` for `&Variant`
@@ -617,8 +609,7 @@ The setting also generates a set of custom trait implementations provided by `sp
 
 - `FromEnum`/`FromEnumRef`/`FromEnumMut` for `Variant`
 
-These traits allow `spire_enum::prelude::EnumExtensions` to be implemented for your enum,
-which provides even more utilities for enum-variant conversion:
+These traits allow `spire_enum::prelude::EnumExtensions` to be implemented for your enum, which provides even more utilities for enum-variant conversion:
 
 ```rust ignore
 use spire_enum::prelude::EnumExtensions;
@@ -651,7 +642,7 @@ pub enum MediaContent {
 }
 ```
 
-##### 1.2.2 `impl_enum_try_into_variants`
+##### 1.2.2. `impl_enum_try_into_variants`
 
 Similar to `impl_conversions`, except it only generates `TryFrom<Enum>`, `TryFrom<&Enum>` and `TryFrom<&mut Enum>` for each variant.
 
@@ -668,7 +659,7 @@ pub enum MediaContent {
 }
 ```
 
-##### 1.2.3 `impl_variants_into_enum`
+##### 1.2.3. `impl_variants_into_enum`
 
 Similar to `impl_conversions`, except it only generates `From<Variant>` for the enum.
 
@@ -685,11 +676,11 @@ pub enum MediaContent {
 }
 ```
 
-#### 1.3 Variant Types Generation
+#### 1.3. Variant Types Generation
 
 These are specified inside `#[delegated_enum( **here** )]`, separated by commas.
 
-##### 1.3.1 `extract_variants`
+##### 1.3.1. `extract_variants`
 
 Generates a new type for each variant:
 
@@ -725,7 +716,7 @@ pub enum SettingsEnum {
 
 Note that the declarative macro `delegate_[enum_name]` is also generated differently to handle the new variant types.
 
-##### 1.3.2 `extract_variants( attrs(attribute_list) )`
+##### 1.3.2. `extract_variants( attrs(attribute_list) )`
 
 Applies every attribute in `(attribute_list)` to each generated variant type.
 
@@ -761,7 +752,7 @@ pub enum ApiResource {
 }
 ```
 
-##### 1.3.3 `extract_variants( derive(trait_list) )`
+##### 1.3.3. `extract_variants( derive(trait_list) )`
 
 Shorthand for `attrs(derive(trait_list))`
 
@@ -795,7 +786,7 @@ pub enum ApiResource {
 }
 ```
 
-##### 1.3.4 `extract_variants( inherit_enum_derives )`
+##### 1.3.4. `extract_variants( inherit_enum_derives )`
 
 Applies the same derives the enum has to each generated variant type.
 
@@ -841,10 +832,9 @@ impl<T: Clone> Clone for ApiResponse<T> {
 
 Note that it uses the macro `delegate_api_response`, which would be generated by the enum annotated with `#[delegated_enum]`.
 
-#### 2.1 Associated Types, Constants and Static Functions
+#### 2.1. Associated Types, Constants and Static Functions
 
-Delegating these items is impossible since there's no enum value to match on, you must write that particular
-item manually if a trait requires these.
+Delegating these items is impossible since there's no enum value to match on, you must write that particular item manually if a trait requires these.
 
 Example:
 
@@ -890,11 +880,40 @@ impl ISetting for VolumeSetting {
 
 Note that you may still manually write the implementation of `fn apply(&self)`, which will "override" what would be generated by the macro.
 
+### 2.2. The `#[receiver]` attribute
+
+This attribute can be used in cases where a function has an argument of type `Self/&Self/&mut Self`, but the argument is not a "receiver" (`self/&self/&mut self`).
+
+Example:
+
+```rust
+#[delegated_enum(impl_conversions)]
+#[derive(Clone)]
+enum VolumeSetting {
+    Main(MainVolume),
+    Music(MusicVolume),
+    Sfx(SfxVolume),
+}
+
+trait Var {
+    fn var_get(field: &Self) -> Self;
+}
+
+#[delegate_impl]
+impl Var for VolumeSetting {
+    fn var_get(#[receiver] field: &Self) -> Self;
+}
+```
+
+The example above basically makes `spire_enum` treat the parameter `field` as if it was `&self`.
+
+Ideally, the trait definition would use simple receivers, but sometimes you don't own the trait definition, so `spire_enum` provides this workaround.
+
 ### 3. Variant Attributes
 
 Attributes that can be applied on a per-variant basis.
 
-#### 3.1 `#[dont_impl_conversions]` / `#[dont_extract]` (Variant attributes)
+#### 3.1. `#[dont_impl_conversions]` / `#[dont_extract]` (Variant attributes)
 
 ```rust ignore
 #[delegated_enum(extract_variants, impl_conversions)]
@@ -914,7 +933,7 @@ pub enum Config {
 }
 ```
 
-#### 3.2 `#[delegate_via(|var| var.foo())]` (Variant attribute)
+#### 3.2. `#[delegate_via(|var| var.foo())]` (Variant attribute)
 
 When delegating methods, instead of calling the method directly on the variant, call the delegated method on the result of the closure inside
 `delegate_via`.
@@ -925,7 +944,7 @@ Example:
 #[delegated_enum(extract_variants, impl_conversions)]
 pub enum Config {
     Default(DefaultConfig),
-    #[delegate_via(|legacy_config| legacy_config.some_fallback())]
+    #[delegate_via(|legacy_config| -> Legacy { legacy_config.some_fallback() })]
     Legacy(LegacyConfig),
     Simple(SimpleConfig),
 }
@@ -959,7 +978,7 @@ macro_rules! delegate_config {
         match $_Self {
             Config::Default($arg) => { $($Rest)* }
             Config::Legacy(__var) => {
-                let __f = (|legacy_config| legacy_config.some_fallback());
+                let __f = |legacy_config| { legacy_config.some_fallback() };
                 let $arg = __f(__var);
                 $($Rest)*
             }
@@ -971,7 +990,7 @@ macro_rules! delegate_config {
         match $_Self {
             Config::Default(__var) => { __var $($Rest)* }
             Config::Legacy(__var) => {
-                let __f = (|legacy_config| legacy_config.some_fallback());
+                let __f = |legacy_config| { legacy_config.some_fallback() };
                 let __res = __f(__var);
                 __res $($Rest)*
             }
@@ -981,7 +1000,7 @@ macro_rules! delegate_config {
 }
 ```
 
-#### 3.3 `#[delegator]` (Variant field attribute)
+#### 3.3. `#[delegator]` (Variant field attribute)
 
 Use this to delegate method calls to a field of the variant instead of the variant itself.
 
@@ -1068,14 +1087,13 @@ impl State for GameState {
 
 ## Troubleshooting
 
-The macros provided by this crate carefully parse the inputs provided to it, I aimed to provide helpful error messages as reasonably as I could.
-If you encounter a cryptic error message, please open an issue, I'll do what I can to fix it in a timely manner.
+The macros provided by this crate carefully parse the inputs provided to it, I aimed to provide helpful error messages as reasonably as I could. If you encounter a cryptic error message, please open
+an issue, I'll do what I can to fix it in a timely manner.
 
 ### 1. "Cannot find macro `delegate_[enum_name]`"
 
-You're likely using the macro `#[delegate_impl]` outside of the module that contains your enum.
-The macro `delegate_[enum_name]` is generated alongside the enum annotated with `#[delegated_enum]`,
-you need to import it on other modules where `#[delegate_impl]` is used:
+You're likely using the macro `#[delegate_impl]` outside of the module that contains your enum. The macro `delegate_[enum_name]` is generated alongside the enum annotated with `#[delegated_enum]`, you
+need to import it on other modules where `#[delegate_impl]` is used:
 
 ```rust ignore
 use path_to_enum_module::{MyEnum, delegate_my_enum};
@@ -1088,10 +1106,8 @@ impl Foo for MyEnum {
 
 ## Performance
 
-The delegation macros generate code that is equivalent to what you would write manually with match statements. There is no runtime overhead compared
-to manually written code.
+The delegation macros generate code that is equivalent to what you would write manually with match statements. There is no runtime overhead compared to manually written code.
 
 ## Contributing
 
-The best way to contribute is by using the crate and providing feedback.
-Please open an issue if you'd like to request a feature or report a bug. 
+The best way to contribute is by using the crate and providing feedback. Please open an issue if you'd like to request a feature or report a bug. 

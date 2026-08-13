@@ -22,15 +22,6 @@ where
     }
 }
 
-// Test with unit variants
-#[delegated_enum]
-pub enum Direction {
-    North,
-    South,
-    East,
-    West,
-}
-
 // Test with struct variants
 #[delegated_enum]
 pub enum Shape {
@@ -38,12 +29,12 @@ pub enum Shape {
         radius: f64,
     },
     Rectangle {
-        width:  f64,
+        width: f64,
         height: f64,
     },
     #[allow(unused)]
     Triangle {
-        base:   f64,
+        base: f64,
         height: f64,
     },
 }
@@ -66,11 +57,15 @@ mod tests {
     use super::*;
 
     impl From<i32> for Result<i32, ()> {
-        fn from(value: i32) -> Self { Result::Ok(value) }
+        fn from(value: i32) -> Self {
+            Result::Ok(value)
+        }
     }
 
     impl From<()> for Result<i32, ()> {
-        fn from(value: ()) -> Self { Result::Err(value) }
+        fn from(value: ()) -> Self {
+            Result::Err(value)
+        }
     }
 
     #[test]

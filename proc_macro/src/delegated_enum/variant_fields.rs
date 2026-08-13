@@ -18,8 +18,8 @@ pub enum SaneVarFields {
 impl SaneVarFields {
     pub fn delegator_field_kw(&self) -> Option<&kw_delegator> {
         match self {
-            SaneVarFields::Named(named) => named.delegator.as_ref().map(|(kw, _)| kw),
-            SaneVarFields::Unnamed(unnamed) => unnamed.delegator.as_ref().map(|(kw, _)| kw),
+            SaneVarFields::Named(named) => named.delegator.as_ref().map(|(kw, _, _)| kw),
+            SaneVarFields::Unnamed(unnamed) => unnamed.delegator.as_ref().map(|(kw, _, _)| kw),
             SaneVarFields::Unit => None,
         }
     }
@@ -27,12 +27,12 @@ impl SaneVarFields {
 
 pub struct SaneVarFieldsNamed {
     pub fields: Brace<Punctuated<VarFieldNamed<SynMeta>, Token![,]>>,
-    pub delegator: Option<(kw_delegator, Ident)>,
+    pub delegator: Option<(kw_delegator, Ident, Type)>,
 }
 
 pub struct SaneVarFieldsUnnamed {
     pub fields: Paren<Punctuated<VarFieldUnnamed<SynMeta>, Token![,]>>,
-    pub delegator: Option<(kw_delegator, usize)>,
+    pub delegator: Option<(kw_delegator, usize, Type)>,
 }
 
 pub fn sanitize_variant_fields(input: VarFields<Meta<kw_delegator>>) -> Result<SaneVarFields> {
@@ -40,17 +40,17 @@ pub fn sanitize_variant_fields(input: VarFields<Meta<kw_delegator>>) -> Result<S
         VarFields::Named(fields) => {
             let (brace_token, fields) = fields.into_parts();
 
-            let mut delegator: Option<(kw_delegator, Ident)> = None;
+            let mut delegator: Option<(kw_delegator, Ident, Type)> = None;
             let mut new_fields = Punctuated::<VarFieldNamed<SynMeta>, Token![,]>::new();
 
             for pair in fields.inner.into_pairs() {
                 let (input_field, comma) = pair.into_tuple();
                 let (new_field, delegator_option) = sanitize_field_named(input_field)?;
                 if let _Some(second) = delegator_option {
-                    if let Some((first, _)) = delegator {
+                    if let Some((first, _, _)) = delegator {
                         err_expected_only_one!(first, second);
                     } else {
-                        delegator = Some((second, new_field.ident.clone()));
+                        delegator = Some((second, new_field.ident.clone(), new_field.ty.clone()));
                     }
                 }
 
@@ -68,17 +68,17 @@ pub fn sanitize_variant_fields(input: VarFields<Meta<kw_delegator>>) -> Result<S
         VarFields::Unnamed(fields) => {
             let (paren_token, fields) = fields.into_parts();
 
-            let mut delegator: Option<(kw_delegator, usize)> = None;
+            let mut delegator: Option<(kw_delegator, usize, Type)> = None;
             let mut new_fields = Punctuated::<VarFieldUnnamed<SynMeta>, Token![,]>::new();
 
             for (idx, pair) in fields.inner.into_pairs().enumerate() {
                 let (input_field, comma) = pair.into_tuple();
                 let (new_field, delegator_option) = sanitize_field_unnamed(input_field)?;
                 if let _Some(second) = delegator_option {
-                    if let Some((first, _)) = delegator {
+                    if let Some((first, _, _)) = delegator {
                         err_expected_only_one!(first, second);
                     } else {
-                        delegator = Some((second, idx));
+                        delegator = Some((second, idx, new_field.ty.clone()));
                     }
                 }
 
@@ -185,9 +185,13 @@ fn sanitize_field_unnamed(
 }
 
 impl ToTokens for SaneVarFieldsNamed {
-    fn to_tokens(&self, tokens: &mut TokenStream) { self.fields.to_tokens(tokens); }
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.fields.to_tokens(tokens);
+    }
 }
 
 impl ToTokens for SaneVarFieldsUnnamed {
-    fn to_tokens(&self, tokens: &mut TokenStream) { self.fields.to_tokens(tokens); }
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.fields.to_tokens(tokens);
+    }
 }
