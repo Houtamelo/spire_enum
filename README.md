@@ -886,7 +886,7 @@ This attribute can be used in cases where a function has an argument of type `Se
 
 Example:
 
-```rust
+```rust ignore
 #[delegated_enum(impl_conversions)]
 #[derive(Clone)]
 enum VolumeSetting {

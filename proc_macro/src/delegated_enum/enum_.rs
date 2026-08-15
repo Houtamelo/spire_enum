@@ -51,8 +51,28 @@ pub(super) fn run(enum_stream: TokenStream1, settings: Settings) -> Result<Token
         let gen_params = enum_def.generics.stream_params();
         let where_clause = enum_def.generics.as_pair().1;
         let enum_ty = &enum_def.ty;
+        let fn_input = Ident::new("_value", Span::call_site());
+
         stream.extend(quote! {
             impl #gen_params ::spire_enum::prelude::EnumExtensions for #enum_ty #where_clause {}
+            
+            impl #gen_params ::spire_enum::prelude::FromEnum<#enum_ty> for #enum_ty #where_clause {
+                fn from_enum(#fn_input: #enum_ty) -> ::core::result::Result<Self, #enum_ty> {
+                    Ok(#fn_input)
+                }
+            }
+    
+            impl #gen_params ::spire_enum::prelude::FromEnumRef<#enum_ty> for #enum_ty #where_clause {
+                fn from_enum_ref<'__ref>(#fn_input: &'__ref #enum_ty) -> ::core::option::Option<&'__ref Self> {
+                    Some(#fn_input)
+                }
+            }
+    
+            impl #gen_params ::spire_enum::prelude::FromEnumMut<#enum_ty> for #enum_ty #where_clause {
+                fn from_enum_mut<'__ref>(#fn_input: &'__ref mut #enum_ty) -> ::core::option::Option<&'__ref mut Self> {
+                    Some(#fn_input)
+                }
+            }
         });
     }
 

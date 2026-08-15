@@ -4,19 +4,29 @@ use super::*;
 
 // Test with custom settings
 #[delegated_enum(extract_variants, impl_conversions)]
-pub enum Option<T> {
-    Some(T),
-    None,
+pub enum CustomOption<T> {
+    CustomSome(T),
+    CustomNone,
 }
 
 // Test with nested enum types
 #[allow(unused)]
-#[delegated_enum]
+#[delegated_enum(impl_conversions)]
+#[derive(Debug)]
 pub enum Message {
     Text(String),
     Binary(Vec<u8>),
-    Status { code: u16, message: String },
-    Nested(Box<Message>),
+    Status(Status),
+    Nested(Nested),
+}
+
+#[derive(Debug)]
+pub struct Nested(pub Box<Message>);
+
+#[derive(Debug, Clone)]
+pub enum Status {
+    Good,
+    Bad,
 }
 
 // Test with complex type constraints
@@ -47,18 +57,60 @@ pub enum SupportedSettings {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::assert_matches;
+
+    #[test]
+    fn test_from_enum_for_enum() {
+        let message = Message::Text(String::from("Hello"));
+        let mut enum_ = FromEnum::<Message>::from_enum(message).unwrap();
+        assert_matches!(enum_, Message::Text(_));
+
+        let enum_ref = <Message as FromEnumRef<Message>>::from_enum_ref(&enum_);
+        assert_matches!(enum_ref, Some(&Message::Text(_)));
+
+        let enum_mut = FromEnumMut::<Message>::from_enum_mut(&mut enum_);
+        assert_matches!(enum_mut, Some(&mut Message::Text(_)));
+    }
+
+    #[test]
+    fn test_from_enum_for_variant() {
+        let enum_ = Message::Text(String::from("Hello"));
+        let var = <Nested as FromEnum<Message>>::from_enum(enum_);
+        assert_matches!(var, Err(_));
+
+        let mut enum_ = Message::Text(String::from("Hello"));
+        let var_ref = <Nested as FromEnumRef<Message>>::from_enum_ref(&enum_);
+        assert_matches!(var_ref, None);
+
+        let var_mut = <Nested as FromEnumMut<Message>>::from_enum_mut(&mut enum_);
+        assert_matches!(var_mut, None);
+    }
+
+    #[test]
+    fn test_from_enum_for_wrong_variant() {
+        let enum_ = Message::Text(String::from("Hello"));
+        let var = <String as FromEnum<Message>>::from_enum(enum_);
+        assert_eq!(var.unwrap(), String::from("Hello"));
+
+        let mut enum_ = Message::Text(String::from("Hello"));
+        let var_ref = <String as FromEnumRef<Message>>::from_enum_ref(&enum_);
+        assert_eq!(var_ref, Some(&String::from("Hello")));
+
+        let var_mut = <String as FromEnumMut<Message>>::from_enum_mut(&mut enum_);
+        assert_eq!(var_mut, Some(&mut String::from("Hello")));
+    }
 
     #[test]
     fn test_option_delegation() {
-        let some = Option::Some(Some(42));
-        let none = Option::<i32>::None(None);
+        let some = CustomOption::CustomSome(CustomSome(42));
+        let none = CustomOption::<i32>::CustomNone(CustomNone);
 
         match some {
-            Option::Some(val) => assert_eq!(val.0, 42),
-            Option::None(_) => panic!("Expected Some variant"),
+            CustomOption::CustomSome(val) => assert_eq!(val.0, 42),
+            CustomOption::CustomNone(_) => panic!("Expected Some variant"),
         }
 
-        assert!(matches!(none, Option::None(..)));
+        assert!(matches!(none, CustomOption::CustomNone(_)));
     }
 
     #[test]
@@ -68,14 +120,11 @@ mod tests {
         #[allow(unused)]
         let binary = Message::Binary(vec![1, 2, 3]);
         #[allow(unused)]
-        let status = Message::Status {
-            code: 200,
-            message: "OK".to_string(),
-        };
-        let nested = Message::Nested(Box::new(Message::Text("Nested".to_string())));
+        let status = Message::Status(Status::Good);
+        let nested = Message::Nested(Nested(Box::new(Message::Text("Nested".to_string()))));
 
         match nested {
-            Message::Nested(boxed) => match *boxed {
+            Message::Nested(nested) => match *nested.0 {
                 Message::Text(ref s) => assert_eq!(s, "Nested"),
                 _ => panic!("Expected Text variant inside Nested"),
             },
